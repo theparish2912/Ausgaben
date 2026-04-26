@@ -372,11 +372,19 @@ function App() {
           const d = snap.data();
           setData({ people: d.people||[], expenses: d.expenses||[], reviews: d.reviews||[] });
         } else {
-          setData({ people:[], expenses:[], reviews:[] });
+          // Dokument existiert noch nicht → leere Struktur anlegen
+          const empty = { people:[], expenses:[], reviews:[] };
+          _docRef.set(empty).catch(console.error);
+          setData(empty);
         }
         setSyncState('ok');
       },
-      err => { console.error(err); setSyncState('error'); }
+      err => {
+        console.error('Firestore Fehler:', err.code, err.message);
+        setSyncState('error');
+        // Trotzdem leere Daten setzen damit die App rendert
+        setData({ people:[], expenses:[], reviews:[], _error: err.code });
+      }
     );
   }
 
@@ -413,8 +421,29 @@ function App() {
     </div>
   );
 
-  const { people, expenses, reviews } = data;
+  const { people, expenses, reviews, _error } = data;
   const personColor = name => PERSON_COLORS[people.indexOf(name) % PERSON_COLORS.length] || PERSON_COLORS[0];
+
+  /* ── Firestore Fehler-Banner ── */
+  const ErrorBanner = () => {
+    if (!_error) return null;
+    const hints = {
+      'permission-denied': 'Firestore-Regeln blockieren den Zugriff. Prüfe die Sicherheitsregeln in der Firebase Console.',
+      'unavailable':       'Firebase ist nicht erreichbar. Prüfe deine Internetverbindung.',
+      'not-found':         'Das Firestore-Dokument wurde nicht gefunden.',
+    };
+    return (
+      <div style={{background:'rgba(168,48,32,0.1)',border:'1.5px solid rgba(168,48,32,0.3)',borderRadius:'var(--radius)',padding:'10px 14px',marginBottom:'1.2rem'}}>
+        <p style={{fontSize:13,fontWeight:800,color:'var(--danger)'}}>⚠ Datenbankfehler: <code style={{fontFamily:'monospace',fontSize:11}}>{_error}</code></p>
+        <p style={{fontSize:12,color:'var(--danger)',marginTop:4,opacity:0.85}}>{hints[_error]||'Unbekannter Fehler. Konsole prüfen (F12).'}</p>
+        {_error==='permission-denied' && (
+          <p style={{fontSize:11,color:'var(--danger)',marginTop:6,opacity:0.7,fontFamily:'monospace'}}>
+            Firestore → Regeln → allow read, write: if request.auth.uid == userId;
+          </p>
+        )}
+      </div>
+    );
+  };
 
   /* ── Mutators ── */
   const update = patch => save({...data, ...patch});
@@ -520,6 +549,7 @@ function App() {
       </div>
 
       {/* ── Stat Strip ── */}
+      <ErrorBanner/>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:'1.5rem'}}>
         {[
           {label:'Ausgaben',     value:expenses.length,    bg:'#FDE8D0',tc:'#B05A10'},
