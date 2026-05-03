@@ -398,6 +398,31 @@ function App() {
     // State update kommt automatisch via onSnapshot
   };
 
+  /* ── Computed (MUST be before any early returns!) ── */
+  const people   = data ? data.people   : [];
+  const expenses = data ? data.expenses : [];
+  const reviews  = data ? data.reviews  : [];
+
+  const {balances, transactions, totalByCurrency} = useMemo(() => {
+    const balances = {};
+    people.forEach(p => balances[p] = 0);
+    const totalByCurrency = {};
+    expenses.forEach(e => {
+      totalByCurrency[e.currency] = (totalByCurrency[e.currency]||0) + e.amount;
+      if (balances[e.paidBy] !== undefined) balances[e.paidBy] += e.amount;
+      Object.entries(e.splits).forEach(([p, share]) => {
+        if (balances[p] !== undefined) balances[p] -= share;
+      });
+    });
+    return {balances, transactions: simplifyDebts(balances), totalByCurrency};
+  }, [expenses, people]);
+
+  const customTotal = useMemo(() =>
+    form.splitMode === 'custom'
+      ? Object.values(form.customSplits).reduce((s, v) => s + (parseFloat(v)||0), 0)
+      : 0,
+  [form.customSplits, form.splitMode]);
+
   /* ── Screens ── */
   if (user === undefined) {
     return (
@@ -418,7 +443,6 @@ function App() {
   }
 
   /* ── Derived helpers ── */
-  const {people, expenses, reviews} = data;
   const personColor = name => PERSON_COLORS[people.indexOf(name) % PERSON_COLORS.length] || PERSON_COLORS[0];
 
   /* ── Mutators ── */
@@ -494,27 +518,6 @@ function App() {
     await _auth.signOut();
     showToast('Abgemeldet');
   };
-
-  /* ── Computed ── */
-  const {balances, transactions, totalByCurrency} = useMemo(() => {
-    const balances = {};
-    people.forEach(p => balances[p] = 0);
-    const totalByCurrency = {};
-    expenses.forEach(e => {
-      totalByCurrency[e.currency] = (totalByCurrency[e.currency]||0) + e.amount;
-      if (balances[e.paidBy] !== undefined) balances[e.paidBy] += e.amount;
-      Object.entries(e.splits).forEach(([p, share]) => {
-        if (balances[p] !== undefined) balances[p] -= share;
-      });
-    });
-    return {balances, transactions: simplifyDebts(balances), totalByCurrency};
-  }, [expenses, people]);
-
-  const customTotal = useMemo(() =>
-    form.splitMode === 'custom'
-      ? Object.values(form.customSplits).reduce((s, v) => s + (parseFloat(v)||0), 0)
-      : 0,
-  [form.customSplits, form.splitMode]);
 
   const syncDotColor = {ok:'var(--success)', syncing:'#E8A020', error:'var(--danger)'}[syncState];
   const syncLabel    = {ok:'Echtzeit-Sync aktiv', syncing:'Speichert…', error:'Sync-Fehler'}[syncState];
