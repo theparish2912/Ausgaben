@@ -10,9 +10,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-<!-- React -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<!-- React (dev build for better error messages) -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 <style>
@@ -23,50 +23,47 @@
   --border:  rgba(180,140,80,0.18); --border2: rgba(180,140,80,0.32);
   --accent:  #D4741A; --accent2: #B05A10;
   --success: #2A7A4B; --danger:  #A83020;
-  --radius:  14px;    --radius-lg: 20px;
+  --radius:  14px; --radius-lg: 20px;
 }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
 #root { max-width: 700px; margin: 0 auto; padding: 2rem 1rem 5rem; }
-
 input[type=text], input[type=number], select, textarea {
   font-family: inherit; font-size: 14px; border: 1.5px solid var(--border2);
   border-radius: var(--radius); padding: 9px 13px; background: var(--bg);
-  color: var(--text); outline: none; width: 100%;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  color: var(--text); outline: none; width: 100%; transition: border-color .15s, box-shadow .15s;
 }
-input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(212,116,26,0.12); }
-textarea { resize: vertical; min-height: 80px; font-size: 12px; font-family: monospace; }
-button { font-family: inherit; font-size: 14px; cursor: pointer; border-radius: var(--radius); border: 1.5px solid var(--border2); padding: 9px 18px; background: transparent; color: var(--text); transition: background 0.15s, transform 0.1s; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(212,116,26,.12); }
+textarea { resize: vertical; min-height: 80px; }
+button { font-family: inherit; font-size: 14px; cursor: pointer; border-radius: var(--radius); border: 1.5px solid var(--border2); padding: 9px 18px; background: transparent; color: var(--text); transition: background .15s, transform .1s; }
 button:hover { background: var(--bg2); }
-button:active { transform: scale(0.97); }
+button:active { transform: scale(.97); }
 .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; border-radius: 999px; padding: 10px 22px; }
 .btn-accent:hover { background: var(--accent2); border-color: var(--accent2); }
 .btn-ghost { background: transparent; color: var(--text2); border-color: var(--border2); border-radius: 999px; }
 .btn-ghost:hover { background: var(--bg2); }
-.btn-danger { color: var(--danger); border-color: rgba(168,48,32,0.25); border-radius: 999px; }
-.btn-danger:hover { background: rgba(168,48,32,0.07); }
+.btn-danger { color: var(--danger); border-color: rgba(168,48,32,.25); border-radius: 999px; }
+.btn-danger:hover { background: rgba(168,48,32,.07); }
 .btn-sm { padding: 5px 12px; font-size: 12px; font-weight: 600; }
 .card { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.3rem; }
 .avatar { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
 .badge { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
 .tabs { display: flex; gap: 6px; margin-bottom: 1.75rem; flex-wrap: wrap; }
-.tab { padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 999px; border: 1.5px solid var(--border2); background: transparent; color: var(--text2); transition: all 0.15s; }
+.tab { padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 999px; border: 1.5px solid var(--border2); background: transparent; color: var(--text2); transition: all .15s; }
 .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.label { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+.label { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: .05em; }
 .row { display: flex; gap: 8px; align-items: center; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.section-title { font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+.section-title { font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
 .empty { text-align: center; padding: 2.5rem; color: var(--text3); font-size: 14px; font-weight: 600; background: var(--bg2); border-radius: var(--radius-lg); }
-.chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1.5px solid var(--border2); cursor: pointer; user-select: none; transition: all 0.12s; background: var(--bg); color: var(--text2); }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1.5px solid var(--border2); cursor: pointer; user-select: none; transition: all .12s; background: var(--bg); color: var(--text2); }
 .chip.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
-.star { font-size: 28px; cursor: pointer; line-height: 1; transition: transform 0.1s; color: var(--border2); }
+.star { font-size: 28px; cursor: pointer; line-height: 1; transition: transform .1s; color: var(--border2); }
 .star:hover, .star.active { color: #E8A020; }
 .star:hover { transform: scale(1.18); }
 .divider { border: none; border-top: 1.5px solid var(--border); margin: 2.5rem 0; }
-.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 9px 22px; border-radius: 999px; font-size: 13px; font-weight: 700; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 999; white-space: nowrap; }
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 9px 22px; border-radius: 999px; font-size: 13px; font-weight: 700; pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 999; white-space: nowrap; }
 .toast.show { opacity: 1; }
-.sync-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 .syncing { animation: pulse 1s ease-in-out infinite; }
 </style>
 </head>
@@ -75,9 +72,23 @@ button:active { transform: scale(0.97); }
 <div class="toast" id="toast"></div>
 
 <script type="text/babel">
-const { useState, useMemo, useEffect, useRef } = React;
+const { useState, useEffect, useRef, useMemo } = React;
 
-/* ── Constants ─────────────────────────────────── */
+/* ══════════════════════════════════════════
+   CONFIG  ← hier deine Firebase-Daten
+══════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyD0-hefSaHG-fsY2h3VAALsozdSEr5cnLo",
+  authDomain:        "ausgaben-split.firebaseapp.com",
+  projectId:         "ausgaben-split",
+  storageBucket:     "ausgaben-split.firebasestorage.app",
+  messagingSenderId: "571624686636",
+  appId:             "1:571624686636:web:dbdc6b711f8f48c7cdfd89"
+};
+
+/* ══════════════════════════════════════════
+   CONSTANTS
+══════════════════════════════════════════ */
 const CURRENCIES = [
   {code:'EUR',symbol:'€'},{code:'USD',symbol:'$'},{code:'GBP',symbol:'£'},
   {code:'CHF',symbol:'CHF'},{code:'JPY',symbol:'¥'},{code:'SEK',symbol:'kr'},
@@ -88,65 +99,73 @@ const PERSON_COLORS = [
   ['#FDE8F5','#A02878'],['#FDFBE8','#8A7010'],['#E8FDFD','#107A7A'],
   ['#F0E8FD','#5A28A0'],['#FDEEE8','#A04028'],
 ];
-/* ══════════════════════════════════════════════
-   🔧 FIREBASE CONFIG – hier einmalig eintragen
-   Zu finden in: Firebase Console → Projekteinstellungen → Web-App
-══════════════════════════════════════════════ */
-const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyD0-hefSaHG-fsY2h3VAALsozdSEr5cnLo",
-  authDomain:        "ausgaben-split.firebaseapp.com",
-  projectId:         "ausgaben-split",
-  storageBucket:     "ausgaben-split.firebasestorage.app",
-  messagingSenderId: "571624686636",
-  appId:             "1:571624686636:web:dbdc6b711f8f48c7cdfd89"
-};
-/* ══════════════════════════════════════════════ */
 
-const DEMO_DATA  = {
-  people: ['Anna','Ben','Clara'],
-  expenses: [
-    {id:1,desc:'Hotelzimmer',amount:180,currency:'EUR',paidBy:'Anna',splits:{Anna:60,Ben:60,Clara:60},date:'2024-04-01'},
-    {id:2,desc:'Abendessen', amount:75, currency:'EUR',paidBy:'Ben', splits:{Anna:25,Ben:25,Clara:25},date:'2024-04-02'},
-    {id:3,desc:'Taxi',       amount:30, currency:'EUR',paidBy:'Clara',splits:{Anna:15,Clara:15},       date:'2024-04-02'},
-  ],
-  reviews: []
-};
+/* ══════════════════════════════════════════
+   FIREBASE  (module-level singletons)
+══════════════════════════════════════════ */
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+const _auth = firebase.auth();
+const _db   = firebase.firestore();
 
-/* ── Firebase singleton ────────────────────────── */
-let _db     = null;
-let _auth   = null;
-let _docRef = null;
-
-function initFirebase(config) {
-  if (!firebase.apps.length) firebase.initializeApp(config);
-  _db     = firebase.firestore();
-  _auth   = firebase.auth();
-  _docRef = _db.collection('splitter').doc('data');
-}
-
-/* ── Helpers ───────────────────────────────────── */
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
 let _toastTimer;
 function showToast(msg) {
   const el = document.getElementById('toast');
   if (!el) return;
-  el.textContent = msg; el.classList.add('show');
+  el.textContent = msg;
+  el.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-/* ── Login Screen ──────────────────────────────── */
-function LoginScreen({ onLogin }) {
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+function fmtAmt(amt, currency) {
+  const c = CURRENCIES.find(x => x.code === currency) || CURRENCIES[0];
+  return currency === 'JPY'
+    ? `${c.symbol}${Math.round(amt)}`
+    : `${c.symbol}${Number(amt).toFixed(2)}`;
+}
+function simplifyDebts(balances) {
+  const cred = [], debt = [];
+  Object.entries(balances).forEach(([p, b]) => {
+    if (b > 0.005) cred.push({person: p, amount: b});
+    else if (b < -0.005) debt.push({person: p, amount: -b});
+  });
+  cred.sort((a, b) => b.amount - a.amount);
+  debt.sort((a, b) => b.amount - a.amount);
+  const txs = [];
+  let i = 0, j = 0;
+  while (i < cred.length && j < debt.length) {
+    const amt = Math.min(cred[i].amount, debt[j].amount);
+    txs.push({from: debt[j].person, to: cred[i].person, amount: amt});
+    cred[i].amount -= amt; debt[j].amount -= amt;
+    if (cred[i].amount < 0.005) i++;
+    if (debt[j].amount < 0.005) j++;
+  }
+  return txs;
+}
+
+/* ══════════════════════════════════════════
+   LOGIN SCREEN
+══════════════════════════════════════════ */
+function LoginScreen() {
   const [loading, setLoading] = useState(false);
-  const [err, setErr]         = useState('');
+  const [err, setErr] = useState('');
 
   const signIn = async () => {
-    setLoading(true); setErr('');
+    setLoading(true);
+    setErr('');
     try {
       const provider = new firebase.auth.GoogleAuthProvider();
       await _auth.signInWithPopup(provider);
-      // onLogin wird durch onAuthStateChanged ausgelöst
-    } catch(e) {
-      if (e.code !== 'auth/popup-closed-by-user') setErr('Anmeldung fehlgeschlagen: ' + e.message);
+    } catch (e) {
+      if (e.code !== 'auth/popup-closed-by-user') {
+        setErr('Anmeldung fehlgeschlagen: ' + e.message);
+      }
     }
     setLoading(false);
   };
@@ -160,15 +179,12 @@ function LoginScreen({ onLogin }) {
         <p style={{fontSize:13,color:'var(--text2)',fontWeight:600,marginBottom:'2rem'}}>
           Melde dich an, um deine Ausgaben zu verwalten
         </p>
-
-        <button onClick={signIn} disabled={loading} style={{
-          width:'100%', padding:'12px 20px', borderRadius:999,
-          background:'var(--text)', color:'var(--bg)',
-          border:'none', fontSize:15, fontWeight:700,
-          cursor:'pointer', display:'flex', alignItems:'center',
-          justifyContent:'center', gap:10, opacity: loading ? 0.7 : 1
-        }}>
-          <svg width="18" height="18" viewBox="0 0 48 48" style={{flexShrink:0}}>
+        <button
+          onClick={signIn}
+          disabled={loading}
+          style={{width:'100%',padding:'12px 20px',borderRadius:999,background:'var(--text)',color:'var(--bg)',border:'none',fontSize:15,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10,opacity:loading?0.7:1}}
+        >
+          <svg width="18" height="18" viewBox="0 0 48 48">
             <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8.9 20-20 0-1.3-.1-2.7-.4-4z"/>
             <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16.1 18.9 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
             <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.6 26.8 36.5 24 36.5c-5.2 0-9.6-3.4-11.2-8.1l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
@@ -176,83 +192,66 @@ function LoginScreen({ onLogin }) {
           </svg>
           {loading ? 'Anmelden…' : 'Mit Google anmelden'}
         </button>
-
         {err && <p style={{fontSize:12,color:'var(--danger)',fontWeight:700,marginTop:12}}>{err}</p>}
-
         <p style={{fontSize:11,color:'var(--text3)',marginTop:'1.5rem',lineHeight:1.6}}>
-          Nur du hast Zugriff auf deine Daten – geschützt durch dein Google-Konto und Firebase-Sicherheitsregeln.
+          Nur du hast Zugriff auf deine Daten – geschützt durch dein Google-Konto.
         </p>
       </div>
     </div>
   );
 }
 
-function initials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
-function fmtAmt(amt, currency) {
-  const c = CURRENCIES.find(x=>x.code===currency)||CURRENCIES[0];
-  return currency==='JPY' ? `${c.symbol}${Math.round(amt)}` : `${c.symbol}${Number(amt).toFixed(2)}`;
-}
-function simplifyDebts(balances) {
-  const cred=[], debt=[];
-  Object.entries(balances).forEach(([p,b])=>{
-    if(b>0.005) cred.push({person:p,amount:b});
-    else if(b<-0.005) debt.push({person:p,amount:-b});
-  });
-  cred.sort((a,b)=>b.amount-a.amount); debt.sort((a,b)=>b.amount-a.amount);
-  const txs=[]; let i=0,j=0;
-  while(i<cred.length&&j<debt.length){
-    const amt=Math.min(cred[i].amount,debt[j].amount);
-    txs.push({from:debt[j].person,to:cred[i].person,amount:amt});
-    cred[i].amount-=amt; debt[j].amount-=amt;
-    if(cred[i].amount<0.005) i++; if(debt[j].amount<0.005) j++;
-  }
-  return txs;
-}
-
-/* ── Stars ─────────────────────────────────────── */
+/* ══════════════════════════════════════════
+   STARS
+══════════════════════════════════════════ */
 function Stars({value, onChange, hovered, setHovered}) {
   return (
     <div style={{display:'flex',gap:3}}>
-      {[1,2,3,4,5].map(n=>(
-        <span key={n} className={`star ${n<=(hovered||value)?'active':''}`}
-          onClick={()=>onChange(n)} onMouseEnter={()=>setHovered(n)} onMouseLeave={()=>setHovered(0)}>★</span>
+      {[1,2,3,4,5].map(n => (
+        <span
+          key={n}
+          className={`star ${n <= (hovered || value) ? 'active' : ''}`}
+          onClick={() => onChange(n)}
+          onMouseEnter={() => setHovered(n)}
+          onMouseLeave={() => setHovered(0)}
+        >★</span>
       ))}
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════
-   REVIEWS
-══════════════════════════════════════════════ */
-function ReviewSection({ reviews, onSave }) {
-  const [name,setName]       = useState('');
-  const [stars,setStars]     = useState(0);
-  const [hovered,setHovered] = useState(0);
-  const [comment,setComment] = useState('');
+/* ══════════════════════════════════════════
+   REVIEW SECTION
+══════════════════════════════════════════ */
+function ReviewSection({reviews, onSave}) {
+  const [name, setName]       = useState('');
+  const [stars, setStars]     = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState('');
   const labels = ['','Schlecht','Ausbaufähig','Ok','Gut','Ausgezeichnet'];
 
   const submit = () => {
-    if(!name.trim()){ alert('Bitte deinen Namen eintragen.'); return; }
-    if(!stars){ alert('Bitte eine Sterne-Bewertung abgeben.'); return; }
-    const r = {id:Date.now(),name:name.trim(),stars,comment:comment.trim(),ts:new Date().toISOString()};
+    if (!name.trim()) { alert('Bitte deinen Namen eintragen.'); return; }
+    if (!stars)       { alert('Bitte eine Sterne-Bewertung abgeben.'); return; }
+    const r = {id: Date.now(), name: name.trim(), stars, comment: comment.trim(), ts: new Date().toISOString()};
     onSave([r, ...reviews]);
     setName(''); setStars(0); setComment('');
     showToast('Bewertung gespeichert ✓');
   };
 
   const del = id => {
-    if(!window.confirm('Bewertung löschen?')) return;
-    onSave(reviews.filter(r=>r.id!==id));
+    if (!window.confirm('Bewertung löschen?')) return;
+    onSave(reviews.filter(r => r.id !== id));
   };
 
   const avg = reviews.length
-    ? (reviews.reduce((s,r)=>s+r.stars,0)/reviews.length).toFixed(1)
+    ? (reviews.reduce((s, r) => s + r.stars, 0) / reviews.length).toFixed(1)
     : null;
 
   const fmtDate = iso => {
-    const d=new Date(iso);
-    return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})
-      +', '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    const d = new Date(iso);
+    return d.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
+      + ', ' + d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
   };
 
   return (
@@ -279,18 +278,16 @@ function ReviewSection({ reviews, onSave }) {
         <div style={{display:'flex',flexDirection:'column',gap:14}}>
           <div>
             <label className="label">Dein Name *</label>
-            <input type="text" placeholder="z.B. Max Mustermann" value={name} onChange={e=>setName(e.target.value)}
-              style={{fontFamily:'inherit',fontSize:'14px'}}/>
+            <input type="text" placeholder="z.B. Max Mustermann" value={name} onChange={e => setName(e.target.value)}/>
           </div>
           <div>
             <label className="label">Bewertung *</label>
             <Stars value={stars} onChange={setStars} hovered={hovered} setHovered={setHovered}/>
-            {stars>0 && <p style={{fontSize:12,color:'var(--accent)',marginTop:5,fontWeight:700}}>{labels[stars]}</p>}
+            {stars > 0 && <p style={{fontSize:12,color:'var(--accent)',marginTop:5,fontWeight:700}}>{labels[stars]}</p>}
           </div>
           <div>
             <label className="label">Kommentar (optional)</label>
-            <textarea placeholder="Was gefällt dir? Was könnte besser sein?" value={comment}
-              onChange={e=>setComment(e.target.value)} style={{fontFamily:'inherit',fontSize:'14px'}}/>
+            <textarea placeholder="Was gefällt dir? Was könnte besser sein?" value={comment} onChange={e => setComment(e.target.value)}/>
           </div>
           <div style={{display:'flex',justifyContent:'flex-end'}}>
             <button className="btn-accent" onClick={submit}>Bewertung speichern</button>
@@ -298,10 +295,11 @@ function ReviewSection({ reviews, onSave }) {
         </div>
       </div>
 
-      {reviews.length===0
+      {reviews.length === 0
         ? <div className="empty">Noch keine Bewertungen – sei der Erste! ★</div>
-        : <div style={{display:'flex',flexDirection:'column',gap:10}}>
-            {reviews.map(r=>(
+        : (
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {reviews.map(r => (
               <div key={r.id} className="card">
                 <div className="row" style={{justifyContent:'space-between',marginBottom:r.comment?10:0}}>
                   <div className="row" style={{gap:12}}>
@@ -312,10 +310,8 @@ function ReviewSection({ reviews, onSave }) {
                     </div>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:12}}>
-                    <span style={{color:'#E8A020',fontSize:16,letterSpacing:1}}>
-                      {'★'.repeat(r.stars)}{'☆'.repeat(5-r.stars)}
-                    </span>
-                    <button className="btn-sm btn-danger" onClick={()=>del(r.id)}>✕</button>
+                    <span style={{color:'#E8A020',fontSize:16,letterSpacing:1}}>{'★'.repeat(r.stars)}{'☆'.repeat(5-r.stars)}</span>
+                    <button className="btn-sm btn-danger" onClick={() => del(r.id)}>✕</button>
                   </div>
                 </div>
                 {r.comment && (
@@ -324,80 +320,173 @@ function ReviewSection({ reviews, onSave }) {
               </div>
             ))}
           </div>
+        )
       }
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════
    MAIN APP
-══════════════════════════════════════════════ */
+══════════════════════════════════════════ */
 function App() {
-  const [user, setUser]     = useState(undefined); // undefined=loading, null=logged out, obj=logged in
-  const [data, setData]     = useState(null);
+  // undefined = noch prüfen, null = nicht angemeldet, object = angemeldet
+  const [user, setUser]           = useState(undefined);
+  const [data, setData]           = useState(null);
   const [syncState, setSyncState] = useState('ok');
-  const [tab, setTab]       = useState('expenses');
+  const [tab, setTab]             = useState('expenses');
   const [newPerson, setNewPerson] = useState('');
   const [showForm, setShowForm]   = useState(false);
-  const [form, setForm] = useState({desc:'',amount:'',currency:'EUR',paidBy:'',participants:[],splitMode:'equal',customSplits:{}});
-  const unsubRef     = useRef(null);
-  const unsubAuthRef = useRef(null);
+  const [form, setForm] = useState({
+    desc:'', amount:'', currency:'EUR', paidBy:'',
+    participants:[], splitMode:'equal', customSplits:{}
+  });
 
-  /* ── Init Firebase + listen to auth state ── */
-  useEffect(()=>{
-    initFirebase(FIREBASE_CONFIG);
-    unsubAuthRef.current = _auth.onAuthStateChanged(u => {
+  const unsubSnapshotRef = useRef(null);
+
+  /* ── Auth state listener ── */
+  useEffect(() => {
+    const unsubAuth = _auth.onAuthStateChanged(u => {
       setUser(u || null);
       if (u) {
-        // Jeder User bekommt sein eigenes Dokument (uid als Schlüssel)
-        _docRef = _db.collection('splitter').doc(u.uid);
-        subscribeToFirestore();
+        // Eigenes Dokument pro User
+        const docRef = _db.collection('splitter').doc(u.uid);
+        // Alten Listener aufräumen
+        if (unsubSnapshotRef.current) {
+          unsubSnapshotRef.current();
+          unsubSnapshotRef.current = null;
+        }
+        // Neuen Listener starten
+        unsubSnapshotRef.current = docRef.onSnapshot(
+          snap => {
+            if (snap.exists) {
+              const d = snap.data();
+              setData({people: d.people||[], expenses: d.expenses||[], reviews: d.reviews||[]});
+            } else {
+              setData({people:[], expenses:[], reviews:[]});
+            }
+            setSyncState('ok');
+          },
+          err => {
+            console.error('Firestore:', err.code, err.message);
+            setSyncState('error');
+          }
+        );
       } else {
-        if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+        if (unsubSnapshotRef.current) {
+          unsubSnapshotRef.current();
+          unsubSnapshotRef.current = null;
+        }
         setData(null);
       }
     });
     return () => {
-      if (unsubRef.current) unsubRef.current();
-      if (unsubAuthRef.current) unsubAuthRef.current();
+      unsubAuth();
+      if (unsubSnapshotRef.current) unsubSnapshotRef.current();
     };
   }, []);
 
-  /* ── Firestore real-time listener ── */
-  function subscribeToFirestore() {
-    if (unsubRef.current) unsubRef.current();
-    unsubRef.current = _docRef.onSnapshot(
-      snap => {
-        if (snap.exists) {
-          const d = snap.data();
-          setData({ people: d.people||[], expenses: d.expenses||[], reviews: d.reviews||[] });
-        } else {
-          // Dokument existiert noch nicht → leere Struktur anlegen
-          const empty = { people:[], expenses:[], reviews:[] };
-          _docRef.set(empty).catch(console.error);
-          setData(empty);
-        }
-        setSyncState('ok');
-      },
-      err => {
-        console.error('Firestore Fehler:', err.code, err.message);
-        setSyncState('error');
-        // Trotzdem leere Daten setzen damit die App rendert
-        setData({ people:[], expenses:[], reviews:[], _error: err.code });
-      }
+  /* ── Save to Firestore ── */
+  const save = newData => {
+    setSyncState('syncing');
+    const docRef = _db.collection('splitter').doc(user.uid);
+    docRef.set(newData).catch(err => {
+      console.error('Save error:', err);
+      setSyncState('error');
+      showToast('Fehler beim Speichern!');
+    });
+    // State update kommt automatisch via onSnapshot
+  };
+
+  /* ── Screens ── */
+  if (user === undefined) {
+    return (
+      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <p style={{fontSize:16,color:'var(--text3)',fontWeight:600}}>Laden…</p>
+      </div>
+    );
+  }
+  if (user === null) {
+    return <LoginScreen/>;
+  }
+  if (!data) {
+    return (
+      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <p style={{fontSize:16,color:'var(--text3)',fontWeight:600}}>Daten werden geladen…</p>
+      </div>
     );
   }
 
-  /* ── Write to Firestore ── */
-  const save = async (newData) => {
-    setSyncState('syncing');
-    try {
-      await _docRef.set(newData);
-      // State is updated via onSnapshot listener automatically
-    } catch(e) {
-      setSyncState('error');
-      showToast('Fehler beim Speichern!');
+  /* ── Derived helpers ── */
+  const {people, expenses, reviews} = data;
+  const personColor = name => PERSON_COLORS[people.indexOf(name) % PERSON_COLORS.length] || PERSON_COLORS[0];
+
+  /* ── Mutators ── */
+  const update      = patch => save({...data, ...patch});
+  const setPeople   = v => update({people:   typeof v === 'function' ? v(people)   : v});
+  const setExpenses = v => update({expenses: typeof v === 'function' ? v(expenses) : v});
+  const setReviews  = v => update({reviews:  v});
+
+  const addPerson = () => {
+    const n = newPerson.trim();
+    if (!n) return;
+    if (people.includes(n)) { showToast('Person bereits vorhanden'); return; }
+    setPeople([...people, n]);
+    setNewPerson('');
+    showToast(`${n} hinzugefügt ✓`);
+  };
+
+  const removePerson = p => {
+    if (!window.confirm(`${p} wirklich entfernen?`)) return;
+    save({...data, people: people.filter(x => x !== p), expenses: expenses.filter(e => e.paidBy !== p)});
+    showToast(`${p} entfernt`);
+  };
+
+  const openForm = () => {
+    setForm({desc:'', amount:'', currency:'EUR', paidBy: people[0]||'', participants:[...people], splitMode:'equal', customSplits:{}});
+    setShowForm(true);
+  };
+
+  const toggleParticipant = p => setForm(f => ({
+    ...f,
+    participants: f.participants.includes(p)
+      ? f.participants.filter(x => x !== p)
+      : [...f.participants, p]
+  }));
+
+  const addExpense = () => {
+    if (!form.desc.trim() || !form.amount || !form.paidBy || form.participants.length === 0) {
+      alert('Bitte alle Pflichtfelder ausfüllen.'); return;
     }
+    const amt = parseFloat(form.amount);
+    let splits = {};
+    if (form.splitMode === 'equal') {
+      const sh = amt / form.participants.length;
+      form.participants.forEach(p => splits[p] = sh);
+    } else {
+      const total = Object.values(form.customSplits).reduce((s, v) => s + (parseFloat(v)||0), 0);
+      if (Math.abs(total - amt) > 0.02) { alert('Summe stimmt nicht mit Betrag überein.'); return; }
+      splits = Object.fromEntries(Object.entries(form.customSplits).map(([k,v]) => [k, parseFloat(v)||0]));
+    }
+    setExpenses(ex => [...ex, {
+      id: Date.now(), desc: form.desc.trim(), amount: amt,
+      currency: form.currency, paidBy: form.paidBy, splits,
+      date: new Date().toISOString().slice(0, 10)
+    }]);
+    setShowForm(false);
+    showToast('Ausgabe gespeichert ✓');
+  };
+
+  const deleteExpense = (id, desc) => {
+    if (!window.confirm(`„${desc}" löschen?`)) return;
+    setExpenses(ex => ex.filter(e => e.id !== id));
+    showToast('Gelöscht');
+  };
+
+  const resetAll = () => {
+    if (!window.confirm('Alle Ausgaben und Personen zurücksetzen?')) return;
+    save({people:[], expenses:[], reviews});
+    showToast('Zurückgesetzt');
   };
 
   const signOut = async () => {
@@ -406,210 +495,128 @@ function App() {
     showToast('Abgemeldet');
   };
 
-  const resetConfig = () => showToast('Config ist direkt in der Datei hinterlegt.');
-
-  /* ── Screens ── */
-  if (user === undefined) return (
-    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <p style={{fontSize:16,color:'var(--text3)',fontWeight:600}}>Laden…</p>
-    </div>
-  );
-  if (user === null) return <LoginScreen/>;
-  if (!data) return (
-    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <p style={{fontSize:16,color:'var(--text3)',fontWeight:600}}>Daten werden geladen…</p>
-    </div>
-  );
-
-  const { people, expenses, reviews, _error } = data;
-  const personColor = name => PERSON_COLORS[people.indexOf(name) % PERSON_COLORS.length] || PERSON_COLORS[0];
-
-  /* ── Firestore Fehler-Banner ── */
-  const ErrorBanner = () => {
-    if (!_error) return null;
-    const hints = {
-      'permission-denied': 'Firestore-Regeln blockieren den Zugriff. Prüfe die Sicherheitsregeln in der Firebase Console.',
-      'unavailable':       'Firebase ist nicht erreichbar. Prüfe deine Internetverbindung.',
-      'not-found':         'Das Firestore-Dokument wurde nicht gefunden.',
-    };
-    return (
-      <div style={{background:'rgba(168,48,32,0.1)',border:'1.5px solid rgba(168,48,32,0.3)',borderRadius:'var(--radius)',padding:'10px 14px',marginBottom:'1.2rem'}}>
-        <p style={{fontSize:13,fontWeight:800,color:'var(--danger)'}}>⚠ Datenbankfehler: <code style={{fontFamily:'monospace',fontSize:11}}>{_error}</code></p>
-        <p style={{fontSize:12,color:'var(--danger)',marginTop:4,opacity:0.85}}>{hints[_error]||'Unbekannter Fehler. Konsole prüfen (F12).'}</p>
-        {_error==='permission-denied' && (
-          <p style={{fontSize:11,color:'var(--danger)',marginTop:6,opacity:0.7,fontFamily:'monospace'}}>
-            Firestore → Regeln → allow read, write: if request.auth.uid == userId;
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  /* ── Mutators ── */
-  const update = patch => save({...data, ...patch});
-  const setPeople   = p  => update({people:   typeof p==='function'?p(people):p});
-  const setExpenses = ex => update({expenses: typeof ex==='function'?ex(expenses):ex});
-  const setReviews  = rv => update({reviews:  rv});
-
-  const addPerson = () => {
-    const n=newPerson.trim();
-    if(!n) return;
-    if(people.includes(n)){ showToast('Person bereits vorhanden'); return; }
-    setPeople([...people,n]); setNewPerson(''); showToast(`${n} hinzugefügt ✓`);
-  };
-
-  const removePerson = p => {
-    if(!window.confirm(`${p} wirklich entfernen?`)) return;
-    save({...data, people:people.filter(x=>x!==p), expenses:expenses.filter(e=>e.paidBy!==p)});
-    showToast(`${p} entfernt`);
-  };
-
-  const openForm = () => {
-    setForm({desc:'',amount:'',currency:'EUR',paidBy:people[0]||'',participants:[...people],splitMode:'equal',customSplits:{}});
-    setShowForm(true);
-  };
-
-  const toggleParticipant = p => setForm(f=>({...f,
-    participants: f.participants.includes(p) ? f.participants.filter(x=>x!==p) : [...f.participants,p]
-  }));
-
-  const addExpense = () => {
-    if(!form.desc.trim()||!form.amount||!form.paidBy||form.participants.length===0){
-      alert('Bitte alle Pflichtfelder ausfüllen.'); return;
-    }
-    const amt=parseFloat(form.amount); let splits={};
-    if(form.splitMode==='equal'){
-      const sh=amt/form.participants.length;
-      form.participants.forEach(p=>splits[p]=sh);
-    } else {
-      const total=Object.values(form.customSplits).reduce((s,v)=>s+(parseFloat(v)||0),0);
-      if(Math.abs(total-amt)>0.02){ alert('Summe stimmt nicht mit Betrag überein.'); return; }
-      splits=Object.fromEntries(Object.entries(form.customSplits).map(([k,v])=>[k,parseFloat(v)||0]));
-    }
-    setExpenses(ex=>[...ex,{
-      id:Date.now(), desc:form.desc.trim(), amount:amt, currency:form.currency,
-      paidBy:form.paidBy, splits, date:new Date().toISOString().slice(0,10)
-    }]);
-    setShowForm(false); showToast('Ausgabe gespeichert ✓');
-  };
-
-  const deleteExpense = (id,desc) => {
-    if(!window.confirm(`„${desc}" löschen?`)) return;
-    setExpenses(ex=>ex.filter(e=>e.id!==id)); showToast('Gelöscht');
-  };
-
-  const resetAll = () => {
-    if(!window.confirm('Alle Ausgaben und Personen zurücksetzen?')) return;
-    save({people:[],expenses:[],reviews}); showToast('Zurückgesetzt');
-  };
-
-  /* ── Derived state ── */
-  const {balances,transactions,totalByCurrency} = useMemo(()=>{
-    const balances={}; people.forEach(p=>balances[p]=0);
-    const totalByCurrency={};
-    expenses.forEach(e=>{
-      totalByCurrency[e.currency]=(totalByCurrency[e.currency]||0)+e.amount;
-      if(balances[e.paidBy]!==undefined) balances[e.paidBy]+=e.amount;
-      Object.entries(e.splits).forEach(([p,share])=>{ if(balances[p]!==undefined) balances[p]-=share; });
+  /* ── Computed ── */
+  const {balances, transactions, totalByCurrency} = useMemo(() => {
+    const balances = {};
+    people.forEach(p => balances[p] = 0);
+    const totalByCurrency = {};
+    expenses.forEach(e => {
+      totalByCurrency[e.currency] = (totalByCurrency[e.currency]||0) + e.amount;
+      if (balances[e.paidBy] !== undefined) balances[e.paidBy] += e.amount;
+      Object.entries(e.splits).forEach(([p, share]) => {
+        if (balances[p] !== undefined) balances[p] -= share;
+      });
     });
-    return {balances,transactions:simplifyDebts(balances),totalByCurrency};
-  },[expenses,people]);
+    return {balances, transactions: simplifyDebts(balances), totalByCurrency};
+  }, [expenses, people]);
 
-  const customTotal = useMemo(()=>
-    form.splitMode==='custom' ? Object.values(form.customSplits).reduce((s,v)=>s+(parseFloat(v)||0),0) : 0,
-  [form.customSplits,form.splitMode]);
+  const customTotal = useMemo(() =>
+    form.splitMode === 'custom'
+      ? Object.values(form.customSplits).reduce((s, v) => s + (parseFloat(v)||0), 0)
+      : 0,
+  [form.customSplits, form.splitMode]);
 
+  const syncDotColor = {ok:'var(--success)', syncing:'#E8A020', error:'var(--danger)'}[syncState];
+  const syncLabel    = {ok:'Echtzeit-Sync aktiv', syncing:'Speichert…', error:'Sync-Fehler'}[syncState];
+
+  /* ══════════════════════════════════════════
+     RENDER
+  ══════════════════════════════════════════ */
   return (
     <div>
-      {/* ── Header ── */}
+
+      {/* Header */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'2rem',flexWrap:'wrap',gap:10}}>
         <div>
           <h1 style={{fontSize:32,fontWeight:800,letterSpacing:'-0.04em',lineHeight:1}}>
             split<span style={{color:'var(--accent)'}}>!</span>
           </h1>
-          <div style={{display:'flex',alignItems:'center',marginTop:5}}>
-            <span className={`sync-dot ${syncState==='syncing'?'syncing':''}`}
-              style={{background:{ok:'var(--success)',syncing:'#E8A020',error:'var(--danger)'}[syncState]}}></span>
-            <span style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>
-              {syncState==='syncing'?'Speichert…':syncState==='error'?'Sync-Fehler':'Echtzeit-Sync aktiv'}
-            </span>
+          <div style={{display:'flex',alignItems:'center',marginTop:5,gap:6}}>
+            <span className={`${syncState==='syncing'?'syncing':''}`}
+              style={{display:'inline-block',width:8,height:8,borderRadius:'50%',background:syncDotColor,flexShrink:0}}/>
+            <span style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{syncLabel}</span>
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-          {user?.photoURL && (
+          {user.photoURL && (
             <img src={user.photoURL} alt={user.displayName||''}
               style={{width:30,height:30,borderRadius:'50%',border:'2px solid var(--border2)'}}/>
           )}
           <span style={{fontSize:12,color:'var(--text2)',fontWeight:600,maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-            {user?.displayName||user?.email||''}
+            {user.displayName || user.email || ''}
           </span>
           <button className="btn-ghost btn-sm" onClick={signOut}>Abmelden</button>
           <button className="btn-danger btn-sm" onClick={resetAll}>Zurücksetzen</button>
         </div>
       </div>
 
-      {/* ── Stat Strip ── */}
-      <ErrorBanner/>
+      {/* Stat Strip */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:'1.5rem'}}>
         {[
           {label:'Ausgaben',     value:expenses.length,    bg:'#FDE8D0',tc:'#B05A10'},
           {label:'Personen',     value:people.length,      bg:'#E8EDFD',tc:'#2A42B0'},
           {label:'Transaktionen',value:transactions.length,bg:'#E8FDE8',tc:'#1E7A30'},
-        ].map(s=>(
+        ].map(s => (
           <div key={s.label} style={{background:s.bg,borderRadius:'var(--radius-lg)',padding:'0.9rem 1rem'}}>
             <p style={{fontSize:26,fontWeight:800,color:s.tc,letterSpacing:'-0.03em',lineHeight:1}}>{s.value}</p>
-            <p style={{fontSize:11,fontWeight:700,color:s.tc,opacity:0.7,marginTop:3,textTransform:'uppercase',letterSpacing:'0.05em'}}>{s.label}</p>
+            <p style={{fontSize:11,fontWeight:700,color:s.tc,opacity:.7,marginTop:3,textTransform:'uppercase',letterSpacing:'.05em'}}>{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* ── Tabs ── */}
+      {/* Tabs */}
       <div className="tabs">
-        {[['expenses','Ausgaben'],['people','Personen'],['settlement','Abrechnung']].map(([key,label])=>(
-          <button key={key} className={`tab ${tab===key?'active':''}`} onClick={()=>setTab(key)}>{label}</button>
+        {[['expenses','Ausgaben'],['people','Personen'],['settlement','Abrechnung']].map(([key,label]) => (
+          <button key={key} className={`tab ${tab===key?'active':''}`} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>
 
-      {/* ════ PERSONEN ════ */}
-      {tab==='people' && (
+      {/* ── PERSONEN ── */}
+      {tab === 'people' && (
         <div>
           <div className="row" style={{marginBottom:'1rem'}}>
             <input type="text" placeholder="Name hinzufügen…" value={newPerson}
-              onChange={e=>setNewPerson(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addPerson()} style={{flex:1}}/>
+              onChange={e => setNewPerson(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addPerson()}
+              style={{flex:1}}/>
             <button className="btn-accent" onClick={addPerson} style={{whiteSpace:'nowrap'}}>+ Hinzufügen</button>
           </div>
-          {people.length===0 ? <div className="empty">Noch keine Personen</div> : (
-            <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              {people.map(p=>{ const [bg,tc]=personColor(p); return (
-                <div key={p} className="card row" style={{justifyContent:'space-between'}}>
-                  <div className="row" style={{gap:12}}>
-                    <div className="avatar" style={{width:42,height:42,fontSize:14,background:bg,color:tc}}>{initials(p)}</div>
-                    <div>
-                      <p style={{fontSize:15,fontWeight:800}}>{p}</p>
-                      <p style={{fontSize:12,color:'var(--text3)',fontWeight:600}}>
-                        {expenses.filter(e=>e.paidBy===p).length} Ausgaben bezahlt
-                      </p>
+          {people.length === 0
+            ? <div className="empty">Noch keine Personen</div>
+            : (
+              <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                {people.map(p => {
+                  const [bg,tc] = personColor(p);
+                  return (
+                    <div key={p} className="card row" style={{justifyContent:'space-between'}}>
+                      <div className="row" style={{gap:12}}>
+                        <div className="avatar" style={{width:42,height:42,fontSize:14,background:bg,color:tc}}>{initials(p)}</div>
+                        <div>
+                          <p style={{fontSize:15,fontWeight:800}}>{p}</p>
+                          <p style={{fontSize:12,color:'var(--text3)',fontWeight:600}}>{expenses.filter(e => e.paidBy===p).length} Ausgaben bezahlt</p>
+                        </div>
+                      </div>
+                      <button className="btn-sm btn-danger" onClick={() => removePerson(p)}>Entfernen</button>
                     </div>
-                  </div>
-                  <button className="btn-sm btn-danger" onClick={()=>removePerson(p)}>Entfernen</button>
-                </div>
-              );})}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )
+          }
         </div>
       )}
 
-      {/* ════ AUSGABEN ════ */}
-      {tab==='expenses' && (
+      {/* ── AUSGABEN ── */}
+      {tab === 'expenses' && (
         <div>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1rem',flexWrap:'wrap',gap:8}}>
             <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
-              {Object.entries(totalByCurrency).map(([cur,amt])=>(
+              {Object.entries(totalByCurrency).map(([cur,amt]) => (
                 <span key={cur} style={{fontSize:13,color:'var(--text2)',fontWeight:600}}>
                   Gesamt: <span style={{fontSize:18,fontWeight:800,letterSpacing:'-0.02em'}}>{fmtAmt(amt,cur)}</span>
                 </span>
               ))}
-              {expenses.length===0 && <span style={{fontSize:13,color:'var(--text3)',fontWeight:600}}>Noch keine Ausgaben</span>}
+              {expenses.length === 0 && <span style={{fontSize:13,color:'var(--text3)',fontWeight:600}}>Noch keine Ausgaben</span>}
             </div>
             <button className="btn-accent" onClick={openForm}>+ Ausgabe</button>
           </div>
@@ -620,50 +627,53 @@ function App() {
               <div style={{display:'flex',flexDirection:'column',gap:14}}>
                 <div>
                   <label className="label">Beschreibung *</label>
-                  <input type="text" placeholder="z.B. Hotel, Abendessen…" value={form.desc} onChange={e=>setForm({...form,desc:e.target.value})}/>
+                  <input type="text" placeholder="z.B. Hotel, Abendessen…" value={form.desc} onChange={e => setForm({...form,desc:e.target.value})}/>
                 </div>
                 <div className="grid2">
                   <div>
                     <label className="label">Betrag *</label>
-                    <input type="number" placeholder="0.00" min="0" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/>
+                    <input type="number" placeholder="0.00" min="0" step="0.01" value={form.amount} onChange={e => setForm({...form,amount:e.target.value})}/>
                   </div>
                   <div>
                     <label className="label">Währung</label>
-                    <select value={form.currency} onChange={e=>setForm({...form,currency:e.target.value})}>
-                      {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
+                    <select value={form.currency} onChange={e => setForm({...form,currency:e.target.value})}>
+                      {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
                   <label className="label">Bezahlt von *</label>
-                  <select value={form.paidBy} onChange={e=>setForm({...form,paidBy:e.target.value})}>
-                    {people.map(p=><option key={p} value={p}>{p}</option>)}
+                  <select value={form.paidBy} onChange={e => setForm({...form,paidBy:e.target.value})}>
+                    {people.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="label">Beteiligte Personen *</label>
                   <div style={{display:'flex',flexWrap:'wrap',gap:7,marginTop:5}}>
-                    {people.map(p=>{ const [bg,tc]=personColor(p); const sel=form.participants.includes(p); return (
-                      <div key={p} className={`chip ${sel?'selected':''}`}
-                        style={sel?{}:{background:bg,color:tc,borderColor:'transparent'}}
-                        onClick={()=>toggleParticipant(p)}>
-                        <div className="avatar" style={{width:18,height:18,fontSize:9,
-                          background:sel?'rgba(255,255,255,0.25)':tc+'22',
-                          color:sel?'#fff':tc}}>{initials(p)}</div>
-                        {p}
-                      </div>
-                    );})}
+                    {people.map(p => {
+                      const [bg,tc] = personColor(p);
+                      const sel = form.participants.includes(p);
+                      return (
+                        <div key={p} className={`chip ${sel?'selected':''}`}
+                          style={sel ? {} : {background:bg,color:tc,borderColor:'transparent'}}
+                          onClick={() => toggleParticipant(p)}>
+                          <div className="avatar" style={{width:18,height:18,fontSize:9,background:sel?'rgba(255,255,255,.25)':tc+'22',color:sel?'#fff':tc}}>{initials(p)}</div>
+                          {p}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 <div>
                   <label className="label">Aufteilung</label>
                   <div style={{display:'flex',gap:8}}>
-                    {[['equal','Gleichmäßig'],['custom','Individuell']].map(([mode,lbl])=>(
-                      <button key={mode} style={{flex:1,borderRadius:'999px',fontWeight:700,
-                        background:form.splitMode===mode?'var(--accent)':'transparent',
-                        color:form.splitMode===mode?'#fff':'var(--text2)',
-                        borderColor:form.splitMode===mode?'var(--accent)':'var(--border2)'}}
-                        onClick={()=>setForm({...form,splitMode:mode})}>{lbl}</button>
+                    {[['equal','Gleichmäßig'],['custom','Individuell']].map(([mode,lbl]) => (
+                      <button key={mode}
+                        style={{flex:1,borderRadius:'999px',fontWeight:700,
+                          background:form.splitMode===mode?'var(--accent)':'transparent',
+                          color:form.splitMode===mode?'#fff':'var(--text2)',
+                          borderColor:form.splitMode===mode?'var(--accent)':'var(--border2)'}}
+                        onClick={() => setForm({...form,splitMode:mode})}>{lbl}</button>
                     ))}
                   </div>
                 </div>
@@ -671,115 +681,130 @@ function App() {
                   <div style={{background:'#FDE8D0',borderRadius:'var(--radius)',padding:'10px 14px'}}>
                     <p style={{fontSize:13,color:'#B05A10',fontWeight:700}}>
                       Pro Person: <span style={{fontSize:16,fontWeight:800}}>{fmtAmt(parseFloat(form.amount)/form.participants.length,form.currency)}</span>
-                      <span style={{fontWeight:600,opacity:0.7}}> ({form.participants.join(', ')})</span>
+                      <span style={{fontWeight:600,opacity:.7}}> ({form.participants.join(', ')})</span>
                     </p>
                   </div>
                 )}
                 {form.splitMode==='custom' && (
                   <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                    {form.participants.map(p=>{ const [bg,tc]=personColor(p); return (
-                      <div key={p} className="row">
-                        <div className="avatar" style={{width:28,height:28,fontSize:10,background:bg,color:tc,flexShrink:0}}>{initials(p)}</div>
-                        <span style={{fontSize:13,minWidth:72,color:'var(--text2)',fontWeight:700}}>{p}</span>
-                        <input type="number" placeholder="0.00" min="0" step="0.01"
-                          value={form.customSplits[p]||''} style={{width:'130px'}}
-                          onChange={e=>setForm({...form,customSplits:{...form.customSplits,[p]:e.target.value}})}/>
-                        <span style={{fontSize:13,color:'var(--text3)',fontWeight:600}}>{form.currency}</span>
-                      </div>
-                    );})}
+                    {form.participants.map(p => {
+                      const [bg,tc] = personColor(p);
+                      return (
+                        <div key={p} className="row">
+                          <div className="avatar" style={{width:28,height:28,fontSize:10,background:bg,color:tc,flexShrink:0}}>{initials(p)}</div>
+                          <span style={{fontSize:13,minWidth:72,color:'var(--text2)',fontWeight:700}}>{p}</span>
+                          <input type="number" placeholder="0.00" min="0" step="0.01" value={form.customSplits[p]||''}
+                            style={{width:'130px'}}
+                            onChange={e => setForm({...form,customSplits:{...form.customSplits,[p]:e.target.value}})}/>
+                          <span style={{fontSize:13,color:'var(--text3)',fontWeight:600}}>{form.currency}</span>
+                        </div>
+                      );
+                    })}
                     {form.amount && (
                       <p style={{fontSize:12,paddingLeft:4,fontWeight:800,
                         color:Math.abs(customTotal-parseFloat(form.amount||0))<0.02?'var(--success)':'var(--danger)'}}>
                         Summe: {fmtAmt(customTotal,form.currency)} / {fmtAmt(parseFloat(form.amount||0),form.currency)}
-                        {Math.abs(customTotal-parseFloat(form.amount||0))<0.02
-                          ? ' ✓'
-                          : ' – Differenz: '+fmtAmt(Math.abs(customTotal-parseFloat(form.amount||0)),form.currency)}
+                        {Math.abs(customTotal-parseFloat(form.amount||0))<0.02?' ✓':' – Differenz: '+fmtAmt(Math.abs(customTotal-parseFloat(form.amount||0)),form.currency)}
                       </p>
                     )}
                   </div>
                 )}
                 <div className="row" style={{justifyContent:'flex-end',gap:8,marginTop:4,paddingTop:12,borderTop:'1.5px solid var(--border)'}}>
-                  <button className="btn-ghost" onClick={()=>setShowForm(false)}>Abbrechen</button>
+                  <button className="btn-ghost" onClick={() => setShowForm(false)}>Abbrechen</button>
                   <button className="btn-accent" onClick={addExpense}>Speichern</button>
                 </div>
               </div>
             </div>
           )}
 
-          {expenses.length===0
+          {expenses.length === 0
             ? <div className="empty">Klicke auf „+ Ausgabe" um zu beginnen</div>
-            : <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                {[...expenses].reverse().map(e=>{ const [bg,tc]=personColor(e.paidBy); return (
-                  <div key={e.id} className="card">
-                    <div className="row" style={{justifyContent:'space-between',marginBottom:10}}>
-                      <div className="row" style={{gap:12}}>
-                        <div className="avatar" style={{width:42,height:42,fontSize:13,background:bg,color:tc}}>{initials(e.paidBy)}</div>
-                        <div>
-                          <p style={{fontSize:15,fontWeight:800}}>{e.desc}</p>
-                          <p style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{e.paidBy} · {e.date}</p>
+            : (
+              <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                {[...expenses].reverse().map(e => {
+                  const [bg,tc] = personColor(e.paidBy);
+                  return (
+                    <div key={e.id} className="card">
+                      <div className="row" style={{justifyContent:'space-between',marginBottom:10}}>
+                        <div className="row" style={{gap:12}}>
+                          <div className="avatar" style={{width:42,height:42,fontSize:13,background:bg,color:tc}}>{initials(e.paidBy)}</div>
+                          <div>
+                            <p style={{fontSize:15,fontWeight:800}}>{e.desc}</p>
+                            <p style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{e.paidBy} · {e.date}</p>
+                          </div>
+                        </div>
+                        <div style={{display:'flex',alignItems:'center',gap:14}}>
+                          <span style={{fontSize:20,fontWeight:800,letterSpacing:'-0.02em'}}>{fmtAmt(e.amount,e.currency)}</span>
+                          <button className="btn-sm btn-danger" onClick={() => deleteExpense(e.id,e.desc)}>✕</button>
                         </div>
                       </div>
-                      <div style={{display:'flex',alignItems:'center',gap:14}}>
-                        <span style={{fontSize:20,fontWeight:800,letterSpacing:'-0.02em'}}>{fmtAmt(e.amount,e.currency)}</span>
-                        <button className="btn-sm btn-danger" onClick={()=>deleteExpense(e.id,e.desc)}>✕</button>
+                      <div style={{borderTop:'1.5px solid var(--border)',paddingTop:8,display:'flex',flexWrap:'wrap',gap:6}}>
+                        {Object.entries(e.splits).map(([p,share]) => {
+                          const [pbg,ptc] = personColor(p);
+                          return <span key={p} className="badge" style={{background:pbg,color:ptc}}>{p}: {fmtAmt(share,e.currency)}</span>;
+                        })}
                       </div>
                     </div>
-                    <div style={{borderTop:'1.5px solid var(--border)',paddingTop:8,display:'flex',flexWrap:'wrap',gap:6}}>
-                      {Object.entries(e.splits).map(([p,share])=>{ const [pbg,ptc]=personColor(p); return (
-                        <span key={p} className="badge" style={{background:pbg,color:ptc}}>{p}: {fmtAmt(share,e.currency)}</span>
-                      );})}
-                    </div>
-                  </div>
-                );})}
+                  );
+                })}
               </div>
+            )
           }
         </div>
       )}
 
-      {/* ════ ABRECHNUNG ════ */}
-      {tab==='settlement' && (
+      {/* ── ABRECHNUNG ── */}
+      {tab === 'settlement' && (
         <div>
           <p className="section-title">Guthaben &amp; Schulden</p>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10,marginBottom:'1.75rem'}}>
-            {people.map(p=>{ const bal=balances[p]||0; const isPos=bal>0.005,isNeg=bal<-0.005; const [bg,tc]=personColor(p); return (
-              <div key={p} style={{background:bg,borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem'}}>
-                <div className="row" style={{gap:8,marginBottom:8}}>
-                  <div className="avatar" style={{width:28,height:28,fontSize:10,background:'rgba(255,255,255,0.5)',color:tc}}>{initials(p)}</div>
-                  <span style={{fontSize:13,fontWeight:800,color:tc}}>{p}</span>
+            {people.map(p => {
+              const bal = balances[p] || 0;
+              const isPos = bal > 0.005, isNeg = bal < -0.005;
+              const [bg,tc] = personColor(p);
+              return (
+                <div key={p} style={{background:bg,borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem'}}>
+                  <div className="row" style={{gap:8,marginBottom:8}}>
+                    <div className="avatar" style={{width:28,height:28,fontSize:10,background:'rgba(255,255,255,.5)',color:tc}}>{initials(p)}</div>
+                    <span style={{fontSize:13,fontWeight:800,color:tc}}>{p}</span>
+                  </div>
+                  <p style={{fontSize:22,fontWeight:800,letterSpacing:'-0.03em',
+                    color:isPos?'var(--success)':isNeg?'var(--danger)':tc,opacity:isPos||isNeg?1:.5}}>
+                    {isNeg?'−':isPos?'+':''}{fmtAmt(Math.abs(bal),'EUR')}
+                  </p>
+                  <p style={{fontSize:11,fontWeight:700,color:tc,opacity:.6,marginTop:3}}>
+                    {isPos?'bekommt zurück':isNeg?'schuldet':'ausgeglichen'}
+                  </p>
                 </div>
-                <p style={{fontSize:22,fontWeight:800,letterSpacing:'-0.03em',
-                  color:isPos?'var(--success)':isNeg?'var(--danger)':tc,opacity:isPos||isNeg?1:0.5}}>
-                  {isNeg?'−':isPos?'+':''}{fmtAmt(Math.abs(bal),'EUR')}
-                </p>
-                <p style={{fontSize:11,fontWeight:700,color:tc,opacity:0.6,marginTop:3}}>
-                  {isPos?'bekommt zurück':isNeg?'schuldet':'ausgeglichen'}
-                </p>
-              </div>
-            );})}
+              );
+            })}
           </div>
 
           <p className="section-title">Optimierte Überweisungen</p>
-          <p style={{fontSize:12,color:'var(--text3)',fontWeight:600,marginBottom:12}}>
-            Minimale Anzahl Transaktionen zum Ausgleich
-          </p>
-          {transactions.length===0
+          <p style={{fontSize:12,color:'var(--text3)',fontWeight:600,marginBottom:12}}>Minimale Anzahl Transaktionen zum Ausgleich</p>
+          {transactions.length === 0
             ? <div className="empty">Alle Ausgaben sind ausgeglichen ✓</div>
-            : <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                {transactions.map((t,i)=>{ const [fbg,ftc]=personColor(t.from); return (
-                  <div key={i} className="card row" style={{justifyContent:'space-between'}}>
-                    <div className="row" style={{gap:12}}>
-                      <div className="avatar" style={{width:40,height:40,fontSize:13,background:fbg,color:ftc}}>{initials(t.from)}</div>
-                      <div>
-                        <p style={{fontSize:14,fontWeight:800}}>
-                          {t.from}<span style={{color:'var(--text3)',margin:'0 8px',fontWeight:400}}>→</span>{t.to}
-                        </p>
-                        <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>Überweisung #{i+1}</p>
+            : (
+              <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                {transactions.map((t,i) => {
+                  const [fbg,ftc] = personColor(t.from);
+                  return (
+                    <div key={i} className="card row" style={{justifyContent:'space-between'}}>
+                      <div className="row" style={{gap:12}}>
+                        <div className="avatar" style={{width:40,height:40,fontSize:13,background:fbg,color:ftc}}>{initials(t.from)}</div>
+                        <div>
+                          <p style={{fontSize:14,fontWeight:800}}>
+                            {t.from}<span style={{color:'var(--text3)',margin:'0 8px',fontWeight:400}}>→</span>{t.to}
+                          </p>
+                          <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>Überweisung #{i+1}</p>
+                        </div>
                       </div>
+                      <p style={{fontSize:20,fontWeight:800,color:'var(--danger)',letterSpacing:'-0.02em'}}>{fmtAmt(t.amount,'EUR')}</p>
                     </div>
-                    <p style={{fontSize:20,fontWeight:800,color:'var(--danger)',letterSpacing:'-0.02em'}}>{fmtAmt(t.amount,'EUR')}</p>
-                  </div>
-                );})}
+                  );
+                })}
               </div>
+            )
           }
         </div>
       )}
