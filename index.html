@@ -405,19 +405,46 @@ function App() {
   const expenses = data ? data.expenses : [];
   const reviews  = data ? data.reviews  : [];
 
-  const {balances, transactions, totalByCurrency} = useMemo(() => {
-    const balances = {};
-    people.forEach(p => balances[p] = 0);
+  const usedCurrencies = [...new Set(expenses.map(e => e.currency))];
+  const mixedCurrencies = usedCurrencies.length > 1;
+
+  const {balances, transactions, totalByCurrency, settlementByCurrency} = useMemo(() => {
+    // Gesamt pro Währung (für Header-Anzeige)
     const totalByCurrency = {};
     expenses.forEach(e => {
       totalByCurrency[e.currency] = (totalByCurrency[e.currency]||0) + e.amount;
+    });
+
+    // Abrechnung pro Währung
+    const settlementByCurrency = {};
+    usedCurrencies.forEach(cur => {
+      const balances = {};
+      people.forEach(p => balances[p] = 0);
+      expenses.filter(e => e.currency === cur).forEach(e => {
+        if (balances[e.paidBy] !== undefined) balances[e.paidBy] += e.amount;
+        Object.entries(e.splits).forEach(([p, share]) => {
+          if (balances[p] !== undefined) balances[p] -= share;
+        });
+      });
+      settlementByCurrency[cur] = {
+        balances,
+        transactions: simplifyDebts({...balances})
+      };
+    });
+
+    // Gesamt-Balances (alle Währungen, für Stat Strip)
+    const balances = {};
+    people.forEach(p => balances[p] = 0);
+    expenses.forEach(e => {
       if (balances[e.paidBy] !== undefined) balances[e.paidBy] += e.amount;
       Object.entries(e.splits).forEach(([p, share]) => {
         if (balances[p] !== undefined) balances[p] -= share;
       });
     });
-    return {balances, transactions: simplifyDebts(balances), totalByCurrency};
-  }, [expenses, people]);
+    const transactions = simplifyDebts({...balances});
+
+    return {balances, transactions, totalByCurrency, settlementByCurrency};
+  }, [expenses, people, usedCurrencies]);
 
   const customTotal = useMemo(() =>
     form.splitMode === 'custom'
@@ -520,11 +547,6 @@ function App() {
     await _auth.signOut();
     showToast('Abgemeldet');
   };
-
-  /* ── Settlement currency: use the most common one, warn if mixed ── */
-  const usedCurrencies = [...new Set(expenses.map(e => e.currency))];
-  const settleCurrency = usedCurrencies.length > 0 ? usedCurrencies[0] : 'EUR';
-  const mixedCurrencies = usedCurrencies.length > 1;
 
   const syncDotColor = {ok:'var(--success)', syncing:'#E8A020', error:'var(--danger)'}[syncState];
   const syncLabel    = {ok:'Echtzeit-Sync aktiv', syncing:'Speichert…', error:'Sync-Fehler'}[syncState];
@@ -766,64 +788,71 @@ function App() {
       {/* ── ABRECHNUNG ── */}
       {tab === 'settlement' && (
         <div>
-          {mixedCurrencies && (
-            <div style={{background:'#FDE8D0',border:'1.5px solid #E8C090',borderRadius:'var(--radius)',padding:'10px 14px',marginBottom:'1.2rem'}}>
-              <p style={{fontSize:13,fontWeight:700,color:'#8A4010'}}>⚠ Mehrere Währungen erkannt</p>
-              <p style={{fontSize:12,color:'#A05020',marginTop:3}}>
-                Die Abrechnung zeigt nur Ausgaben in <strong>{settleCurrency}</strong>. Für andere Währungen bitte separate Gruppen anlegen.
-              </p>
-            </div>
-          )}
-          <p className="section-title">Guthaben &amp; Schulden</p>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10,marginBottom:'1.75rem'}}>
-            {people.map(p => {
-              const bal = balances[p] || 0;
-              const isPos = bal > 0.005, isNeg = bal < -0.005;
-              const [bg,tc] = personColor(p);
+          {usedCurrencies.length === 0 ? (
+            <div className="empty">Noch keine Ausgaben vorhanden</div>
+          ) : (
+            usedCurrencies.map(cur => {
+              const {balances: curBalances, transactions: curTxs} = settlementByCurrency[cur];
               return (
-                <div key={p} style={{background:bg,borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem'}}>
-                  <div className="row" style={{gap:8,marginBottom:8}}>
-                    <div className="avatar" style={{width:28,height:28,fontSize:10,background:'rgba(255,255,255,.5)',color:tc}}>{initials(p)}</div>
-                    <span style={{fontSize:13,fontWeight:800,color:tc}}>{p}</span>
+                <div key={cur} style={{marginBottom:'2rem'}}>
+                  {/* Währungs-Header */}
+                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+                    <span style={{fontSize:13,fontWeight:800,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.08em'}}>Abrechnung</span>
+                    <span style={{background:'#FDE8D0',color:'#B05A10',borderRadius:999,padding:'3px 12px',fontSize:13,fontWeight:800}}>{cur}</span>
                   </div>
-                  <p style={{fontSize:22,fontWeight:800,letterSpacing:'-0.03em',
-                    color:isPos?'var(--success)':isNeg?'var(--danger)':tc,opacity:isPos||isNeg?1:.5}}>
-                    {isNeg?'−':isPos?'+':''}{fmtAmt(Math.abs(bal), settleCurrency)}
-                  </p>
-                  <p style={{fontSize:11,fontWeight:700,color:tc,opacity:.6,marginTop:3}}>
-                    {isPos?'bekommt zurück':isNeg?'schuldet':'ausgeglichen'}
-                  </p>
+
+                  {/* Guthaben & Schulden */}
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:10,marginBottom:'1rem'}}>
+                    {people.map(p => {
+                      const bal = curBalances[p] || 0;
+                      const isPos = bal > 0.005, isNeg = bal < -0.005;
+                      const [bg,tc] = personColor(p);
+                      return (
+                        <div key={p} style={{background:bg,borderRadius:'var(--radius-lg)',padding:'1rem 1.1rem'}}>
+                          <div className="row" style={{gap:8,marginBottom:8}}>
+                            <div className="avatar" style={{width:28,height:28,fontSize:10,background:'rgba(255,255,255,.5)',color:tc}}>{initials(p)}</div>
+                            <span style={{fontSize:13,fontWeight:800,color:tc}}>{p}</span>
+                          </div>
+                          <p style={{fontSize:22,fontWeight:800,letterSpacing:'-0.03em',
+                            color:isPos?'var(--success)':isNeg?'var(--danger)':tc,opacity:isPos||isNeg?1:.5}}>
+                            {isNeg?'−':isPos?'+':''}{fmtAmt(Math.abs(bal), cur)}
+                          </p>
+                          <p style={{fontSize:11,fontWeight:700,color:tc,opacity:.6,marginTop:3}}>
+                            {isPos?'bekommt zurück':isNeg?'schuldet':'ausgeglichen'}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Überweisungen */}
+                  {curTxs.length === 0 ? (
+                    <div className="empty" style={{padding:'1rem 1.5rem',fontSize:13}}>Ausgeglichen ✓</div>
+                  ) : (
+                    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                      {curTxs.map((t,i) => {
+                        const [fbg,ftc] = personColor(t.from);
+                        return (
+                          <div key={i} className="card row" style={{justifyContent:'space-between'}}>
+                            <div className="row" style={{gap:12}}>
+                              <div className="avatar" style={{width:40,height:40,fontSize:13,background:fbg,color:ftc}}>{initials(t.from)}</div>
+                              <div>
+                                <p style={{fontSize:14,fontWeight:800}}>
+                                  {t.from}<span style={{color:'var(--text3)',margin:'0 8px',fontWeight:400}}>→</span>{t.to}
+                                </p>
+                                <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>Überweisung #{i+1}</p>
+                              </div>
+                            </div>
+                            <p style={{fontSize:20,fontWeight:800,color:'var(--danger)',letterSpacing:'-0.02em'}}>{fmtAmt(t.amount, cur)}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
-            })}
-          </div>
-
-          <p className="section-title">Optimierte Überweisungen</p>
-          <p style={{fontSize:12,color:'var(--text3)',fontWeight:600,marginBottom:12}}>Minimale Anzahl Transaktionen zum Ausgleich</p>
-          {transactions.length === 0
-            ? <div className="empty">Alle Ausgaben sind ausgeglichen ✓</div>
-            : (
-              <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                {transactions.map((t,i) => {
-                  const [fbg,ftc] = personColor(t.from);
-                  return (
-                    <div key={i} className="card row" style={{justifyContent:'space-between'}}>
-                      <div className="row" style={{gap:12}}>
-                        <div className="avatar" style={{width:40,height:40,fontSize:13,background:fbg,color:ftc}}>{initials(t.from)}</div>
-                        <div>
-                          <p style={{fontSize:14,fontWeight:800}}>
-                            {t.from}<span style={{color:'var(--text3)',margin:'0 8px',fontWeight:400}}>→</span>{t.to}
-                          </p>
-                          <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>Überweisung #{i+1}</p>
-                        </div>
-                      </div>
-                      <p style={{fontSize:20,fontWeight:800,color:'var(--danger)',letterSpacing:'-0.02em'}}>{fmtAmt(t.amount, settleCurrency)}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            )
-          }
+            })
+          )}
         </div>
       )}
 
