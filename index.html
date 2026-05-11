@@ -72,7 +72,7 @@ button:active { transform: scale(.97); }
 <div class="toast" id="toast"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useRef, useMemo } = React;
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
 /* ══════════════════════════════════════════
    CONFIG  ← hier deine Firebase-Daten
@@ -370,6 +370,8 @@ function App() {
           err => {
             console.error('Firestore:', err.code, err.message);
             setSyncState('error');
+            // App nicht einfrieren – leere Daten setzen damit UI rendert
+            setData(d => d || {people:[], expenses:[], reviews:[]});
           }
         );
       } else {
@@ -387,7 +389,8 @@ function App() {
   }, []);
 
   /* ── Save to Firestore ── */
-  const save = newData => {
+  const save = useCallback(newData => {
+    if (!user) return;
     setSyncState('syncing');
     const docRef = _db.collection('splitter').doc(user.uid);
     docRef.set(newData).catch(err => {
@@ -395,8 +398,7 @@ function App() {
       setSyncState('error');
       showToast('Fehler beim Speichern!');
     });
-    // State update kommt automatisch via onSnapshot
-  };
+  }, [user]);
 
   /* ── Computed (MUST be before any early returns!) ── */
   const people   = data ? data.people   : [];
@@ -518,6 +520,11 @@ function App() {
     await _auth.signOut();
     showToast('Abgemeldet');
   };
+
+  /* ── Settlement currency: use the most common one, warn if mixed ── */
+  const usedCurrencies = [...new Set(expenses.map(e => e.currency))];
+  const settleCurrency = usedCurrencies.length > 0 ? usedCurrencies[0] : 'EUR';
+  const mixedCurrencies = usedCurrencies.length > 1;
 
   const syncDotColor = {ok:'var(--success)', syncing:'#E8A020', error:'var(--danger)'}[syncState];
   const syncLabel    = {ok:'Echtzeit-Sync aktiv', syncing:'Speichert…', error:'Sync-Fehler'}[syncState];
@@ -759,6 +766,14 @@ function App() {
       {/* ── ABRECHNUNG ── */}
       {tab === 'settlement' && (
         <div>
+          {mixedCurrencies && (
+            <div style={{background:'#FDE8D0',border:'1.5px solid #E8C090',borderRadius:'var(--radius)',padding:'10px 14px',marginBottom:'1.2rem'}}>
+              <p style={{fontSize:13,fontWeight:700,color:'#8A4010'}}>⚠ Mehrere Währungen erkannt</p>
+              <p style={{fontSize:12,color:'#A05020',marginTop:3}}>
+                Die Abrechnung zeigt nur Ausgaben in <strong>{settleCurrency}</strong>. Für andere Währungen bitte separate Gruppen anlegen.
+              </p>
+            </div>
+          )}
           <p className="section-title">Guthaben &amp; Schulden</p>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10,marginBottom:'1.75rem'}}>
             {people.map(p => {
@@ -773,7 +788,7 @@ function App() {
                   </div>
                   <p style={{fontSize:22,fontWeight:800,letterSpacing:'-0.03em',
                     color:isPos?'var(--success)':isNeg?'var(--danger)':tc,opacity:isPos||isNeg?1:.5}}>
-                    {isNeg?'−':isPos?'+':''}{fmtAmt(Math.abs(bal),'EUR')}
+                    {isNeg?'−':isPos?'+':''}{fmtAmt(Math.abs(bal), settleCurrency)}
                   </p>
                   <p style={{fontSize:11,fontWeight:700,color:tc,opacity:.6,marginTop:3}}>
                     {isPos?'bekommt zurück':isNeg?'schuldet':'ausgeglichen'}
@@ -802,7 +817,7 @@ function App() {
                           <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>Überweisung #{i+1}</p>
                         </div>
                       </div>
-                      <p style={{fontSize:20,fontWeight:800,color:'var(--danger)',letterSpacing:'-0.02em'}}>{fmtAmt(t.amount,'EUR')}</p>
+                      <p style={{fontSize:20,fontWeight:800,color:'var(--danger)',letterSpacing:'-0.02em'}}>{fmtAmt(t.amount, settleCurrency)}</p>
                     </div>
                   );
                 })}
