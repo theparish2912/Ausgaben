@@ -109,6 +109,12 @@ function fmtAmt(amt,currency){
   const c=CURRENCIES.find(x=>x.code===currency)||CURRENCIES[0];
   return currency==='JPY'?`${c.symbol}${Math.round(amt)}`:`${c.symbol}${Number(amt).toFixed(2)}`;
 }
+// Convert YYYY-MM-DD to DD.MM.YYYY for display
+function fmtDate(iso){
+  if(!iso)return'';
+  const m=iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?`${m[3]}.${m[2]}.${m[1]}`:iso;
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
 function simplifyDebts(balances){
   const cred=[],debt=[];
@@ -176,8 +182,8 @@ function parseCsv(text,people){
       }
     }
 
-    if(!person||!desc||isNaN(amount)||amount<=0){errors.push(`Zeile ${i+2}: ungültig`);return;}
-    if(isNaN(ratio)||ratio<0||ratio>1){errors.push(`Zeile ${i+2}: Aufteilverhältnis muss 0–1 sein`);return;}
+    if(!person||!desc||isNaN(amount)){errors.push(`Zeile ${i+2}: ungültig`);return;}
+    if(isNaN(ratio)||Math.abs(ratio)>1){errors.push(`Zeile ${i+2}: Aufteilverhältnis muss zwischen -1 und 1 liegen`);return;}
     allPeople.add(person);
 
     // payer pays their own share = amount*ratio
@@ -333,6 +339,24 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   const [editingPaymentId,setEditingPaymentId]=useState(null);
   const [paymentForm,setPaymentForm]=useState({from:'',to:'',amount:'',currency:'EUR',date:'',note:''});
   const csvRef=useRef();
+  const exportRef=useRef();
+
+  const exportCsv=()=>{
+    if(expenses.length===0){showToast('Keine Ausgaben zum Exportieren');return;}
+    const rows=[['Person','Beschreibung','Betrag','Währung','Aufteilverhältnis','Datum']];
+    [...expenses].sort((a,b)=>a.date<b.date?1:-1).forEach(e=>{
+      const ratio=e.amount!==0?Math.round(e.splits[e.paidBy]/e.amount*100)/100:'';
+      rows.push([e.paidBy,e.desc,e.amount,e.currency,ratio,fmtDate(e.date)]);
+    });
+    const csv=rows.map(r=>r.join(';')).join('\n');
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    exportRef.current.href=url;
+    exportRef.current.download=`${group.name.replace(/[^a-zA-Z0-9äöüÄÖÜß]/g,'_')}_Ausgaben.csv`;
+    exportRef.current.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exportiert ✓');
+  };
 
   const personColor=name=>personColorFn(name,people);
 
@@ -390,15 +414,16 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   };
 
   const openEdit=e=>{
-    // Reconstruct pctSplits from existing splits
     const pctSplits={};
-    Object.entries(e.splits).forEach(([p,share])=>{pctSplits[p]=(share/e.amount*100).toFixed(1);});
+    Object.entries(e.splits).forEach(([p,share])=>{pctSplits[p]=(e.amount!==0?(share/e.amount*100):0).toFixed(1);});
     setEditingId(e.id);
     setForm({
       desc:e.desc, amount:String(e.amount), currency:e.currency,
       paidBy:e.paidBy, participants:Object.keys(e.splits),
-      splitMode:'custom', customSplits:Object.fromEntries(Object.entries(e.splits).map(([k,v])=>[k,String(v)])),
-      pctSplits, date:e.date||new Date().toISOString().slice(0,10)
+      splitMode:'custom',
+      customSplits:Object.fromEntries(Object.entries(e.splits).map(([k,v])=>[k,String(v)])),
+      pctSplits,
+      date:e.date&&e.date.match(/^\d{4}-\d{2}-\d{2}$/)?e.date:new Date().toISOString().slice(0,10)
     });
     setShowForm(true);
   };
@@ -680,7 +705,9 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
             </div>
             <div className="row" style={{gap:8}}>
               <input ref={csvRef} type="file" accept=".csv,.txt" style={{display:'none'}} onChange={handleCsv}/>
-              <button className="btn-ghost btn-sm" onClick={()=>csvRef.current.click()}>↑ CSV</button>
+              <a ref={exportRef} style={{display:'none'}} aria-hidden="true">x</a>
+              <button className="btn-ghost btn-sm" onClick={()=>csvRef.current.click()}>↑ Import</button>
+              <button className="btn-ghost btn-sm" onClick={exportCsv}>↓ Export</button>
               <button className="btn-accent" onClick={openForm} disabled={people.length===0}>+ Ausgabe</button>
             </div>
           </div>
@@ -700,9 +727,8 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
 
           {expenses.length===0?<div className="empty">Klicke auf „+ Ausgabe" um zu beginnen</div>:(
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              {[...expenses].reverse().map(e=>{
+              {[...expenses].sort((a,b)=>a.date<b.date?1:-1).map(e=>{
                 const [bg,tc]=personColor(e.paidBy);
-                // Inline edit form
                 if(editingId===e.id){
                   return(
                     <div key={e.id} className="card" style={{border:'1.5px solid var(--accent)'}}>
@@ -716,7 +742,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
                   <div className="row" style={{justifyContent:'space-between',marginBottom:10}}>
                     <div className="row" style={{gap:12}}>
                       <div className="avatar" style={{width:42,height:42,fontSize:13,background:bg,color:tc}}>{initials(e.paidBy)}</div>
-                      <div><p style={{fontSize:15,fontWeight:800}}>{e.desc}</p><p style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{e.paidBy} · {e.date}</p></div>
+                      <div><p style={{fontSize:15,fontWeight:800}}>{e.desc}</p><p style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{e.paidBy} · {fmtDate(e.date)}</p></div>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
                       <span style={{fontSize:20,fontWeight:800,letterSpacing:'-0.02em'}}>{fmtAmt(e.amount,e.currency)}</span>
@@ -822,7 +848,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
                           <span style={{color:ttc}}>{p.to}</span>
                         </p>
                         <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>
-                          {p.date}{p.note&&` · ${p.note}`}
+                          {fmtDate(p.date)}{p.note&&` · ${p.note}`}
                         </p>
                       </div>
                     </div>
