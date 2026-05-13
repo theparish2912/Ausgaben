@@ -89,6 +89,12 @@ const PERSON_COLORS=[
   ['#FDE8F5','#A02878'],['#FDFBE8','#8A7010'],['#E8FDFD','#107A7A'],
   ['#F0E8FD','#5A28A0'],['#FDEEE8','#A04028'],
 ];
+const EXPENSE_CATEGORIES=[
+  {id:'food',   icon:'🍽️', label:'Essen'},
+  {id:'hotel',  icon:'🛏️', label:'Übernachtung'},
+  {id:'flight', icon:'✈️', label:'Flug'},
+  {id:'train',  icon:'🚂', label:'Bahn'},
+];
 
 /* ══ FIREBASE ════════════════════════════════ */
 if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
@@ -334,7 +340,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   const [newPerson,setNewPerson]=useState('');
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
-  const [form,setForm]=useState({desc:'',amount:'',currency:'EUR',paidBy:'',participants:[],splitMode:'equal',customSplits:{},pctSplits:{},date:'',vormerkung:false});
+  const [form,setForm]=useState({desc:'',amount:'',currency:'EUR',paidBy:'',participants:[],splitMode:'equal',customSplits:{},pctSplits:{},date:'',vormerkung:false,category:null});
   const [showPaymentForm,setShowPaymentForm]=useState(false);
   const [editingPaymentId,setEditingPaymentId]=useState(null);
   const [paymentForm,setPaymentForm]=useState({from:'',to:'',amount:'',currency:'EUR',date:'',note:''});
@@ -409,7 +415,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
 
   const openForm=()=>{
     setEditingId(null);
-    setForm({desc:'',amount:'',currency:'EUR',paidBy:people[0]||'',participants:[...people],splitMode:'equal',customSplits:{},pctSplits:{},date:new Date().toISOString().slice(0,10),vormerkung:false});
+    setForm({desc:'',amount:'',currency:'EUR',paidBy:people[0]||'',participants:[...people],splitMode:'equal',customSplits:{},pctSplits:{},date:new Date().toISOString().slice(0,10),vormerkung:false,category:null});
     setShowForm(true);
   };
 
@@ -424,14 +430,17 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
       customSplits:Object.fromEntries(Object.entries(e.splits).map(([k,v])=>[k,String(v)])),
       pctSplits,
       date:e.date&&e.date.match(/^\d{4}-\d{2}-\d{2}$/)?e.date:new Date().toISOString().slice(0,10),
-      vormerkung:e.vormerkung||false
+      vormerkung:e.vormerkung||false,
+      category:e.category||null
     });
     setShowForm(true);
   };
   const toggleParticipant=p=>setForm(f=>({...f,participants:f.participants.includes(p)?f.participants.filter(x=>x!==p):[...f.participants,p]}));
 
   const saveExpense=()=>{
-    if(!form.desc.trim()||form.amount===''||form.amount===undefined||!form.paidBy||form.participants.length===0){alert('Bitte alle Pflichtfelder ausfüllen.');return;}
+    const cat=EXPENSE_CATEGORIES.find(c=>c.id===form.category);
+    const descFinal=form.desc.trim()||(cat?cat.label:'');
+    if(!descFinal||form.amount===''||form.amount===undefined||!form.paidBy||form.participants.length===0){alert('Bitte Betrag, Zahler und beteiligte Personen ausfüllen.');return;}
     const amt=parseFloat(form.amount);
     let splits={};
     if(form.splitMode==='equal'){
@@ -446,7 +455,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
       if(Math.abs(total-amt)>0.02){alert('Summe stimmt nicht überein.');return;}
       splits=Object.fromEntries(Object.entries(form.customSplits).map(([k,v])=>[k,parseFloat(v)||0]));
     }
-    const entry={id:editingId||uid(),desc:form.desc.trim(),amount:amt,currency:form.currency,paidBy:form.paidBy,splits,date:form.date||new Date().toISOString().slice(0,10),vormerkung:form.vormerkung||false};
+    const entry={id:editingId||uid(),desc:descFinal,amount:amt,currency:form.currency,paidBy:form.paidBy,splits,date:form.date||new Date().toISOString().slice(0,10),vormerkung:form.vormerkung||false,category:form.category||null};
     if(editingId){
       setExpenses(ex=>ex.map(e=>e.id===editingId?entry:e));
       showToast('Ausgabe aktualisiert ✓');
@@ -520,7 +529,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   },[expenses,payments,people,usedCurrencies.join()]);
 
   const totalByCurrency=useMemo(()=>{
-    const t={};expenses.forEach(e=>{t[e.currency]=(t[e.currency]||0)+e.amount;});return t;
+    const t={};expenses.filter(e=>!e.vormerkung).forEach(e=>{t[e.currency]=(t[e.currency]||0)+e.amount;});return t;
   },[expenses]);
 
   const totalTxCount=usedCurrencies.reduce((s,c)=>s+(settlementByCurrency[c]?.transactions.length||0),0);
@@ -537,7 +546,27 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   const expenseFormFields=()=>(
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div className="grid2">
-        <div style={{gridColumn:'1/-1'}}><label className="label">Beschreibung *</label><input type="text" placeholder="z.B. Hotel, Abendessen…" value={form.desc} onChange={e=>setForm({...form,desc:e.target.value})}/></div>
+        <div style={{gridColumn:'1/-1'}}>
+          <label className="label">Kategorie</label>
+          <div style={{display:'flex',gap:8,marginBottom:10}}>
+            {EXPENSE_CATEGORIES.map(cat=>{
+              const sel=form.category===cat.id;
+              return(
+                <button key={cat.id} onClick={()=>setForm({...form,category:sel?null:cat.id})}
+                  style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'8px 4px',
+                    borderRadius:'var(--radius)',fontWeight:700,fontSize:11,
+                    background:sel?'var(--accent)':'var(--bg2)',
+                    color:sel?'#fff':'var(--text2)',
+                    borderColor:sel?'var(--accent)':'var(--border2)'}}>
+                  <span style={{fontSize:22}}>{cat.icon}</span>
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+          <label className="label">Beschreibung {form.category?'(optional)':'*'}</label>
+          <input type="text" placeholder={form.category?`z.B. ${EXPENSE_CATEGORIES.find(c=>c.id===form.category)?.label} im Hotel…`:'z.B. Hotel, Abendessen…'} value={form.desc} onChange={e=>setForm({...form,desc:e.target.value})}/>
+        </div>
       </div>
       <div className="grid2">
         <div><label className="label">Betrag *</label><input type="number" placeholder="0.00" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></div>
@@ -760,7 +789,13 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
                   <div className="row" style={{justifyContent:'space-between',marginBottom:10}}>
                     <div className="row" style={{gap:12}}>
                       <div className="avatar" style={{width:42,height:42,fontSize:13,background:bg,color:tc}}>{initials(e.paidBy)}</div>
-                      <div><p style={{fontSize:15,fontWeight:800}}>{e.desc}</p><p style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{e.paidBy} · {e.date}</p></div>
+                      <div>
+                        <p style={{fontSize:15,fontWeight:800}}>
+                          {e.category&&<span style={{marginRight:5}}>{EXPENSE_CATEGORIES.find(c=>c.id===e.category)?.icon}</span>}
+                          {e.desc}
+                        </p>
+                        <p style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{e.paidBy} · {e.date}</p>
+                      </div>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
                       <span style={{fontSize:20,fontWeight:800,letterSpacing:'-0.02em'}}>{fmtAmt(e.amount,e.currency)}</span>
