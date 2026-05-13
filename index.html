@@ -742,7 +742,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
                   <div className="row" style={{justifyContent:'space-between',marginBottom:10}}>
                     <div className="row" style={{gap:12}}>
                       <div className="avatar" style={{width:42,height:42,fontSize:13,background:bg,color:tc}}>{initials(e.paidBy)}</div>
-                      <div><p style={{fontSize:15,fontWeight:800}}>{e.desc}</p><p style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{e.paidBy} · {fmtDate(e.date)}</p></div>
+                      <div><p style={{fontSize:15,fontWeight:800}}>{e.desc}</p><p style={{fontSize:12,color:'var(--text2)',fontWeight:600}}>{e.paidBy} · {e.date}</p></div>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
                       <span style={{fontSize:20,fontWeight:800,letterSpacing:'-0.02em'}}>{fmtAmt(e.amount,e.currency)}</span>
@@ -848,7 +848,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
                           <span style={{color:ttc}}>{p.to}</span>
                         </p>
                         <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>
-                          {fmtDate(p.date)}{p.note&&` · ${p.note}`}
+                          {p.date}{p.note&&` · ${p.note}`}
                         </p>
                       </div>
                     </div>
