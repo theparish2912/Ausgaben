@@ -744,13 +744,21 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
               <div style={{display:'flex',flexDirection:'column',gap:12}}>
                 <div className="grid2">
                   <div><label className="label">Von *</label>
-                    <select value={paymentForm.from} onChange={e=>setPaymentForm({...paymentForm,from:e.target.value})}>
+                    <select value={paymentForm.from} onChange={e=>{
+                      const newFrom=e.target.value;
+                      const newTo=paymentForm.to===newFrom?(people.find(p=>p!==newFrom)||''):paymentForm.to;
+                      setPaymentForm({...paymentForm,from:newFrom,to:newTo});
+                    }}>
                       {people.map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
                   </div>
                   <div><label className="label">An *</label>
-                    <select value={paymentForm.to} onChange={e=>setPaymentForm({...paymentForm,to:e.target.value})}>
-                      {people.filter(p=>p!==paymentForm.from).map(p=><option key={p} value={p}>{p}</option>)}
+                    <select value={paymentForm.to} onChange={e=>{
+                      const newTo=e.target.value;
+                      const newFrom=paymentForm.from===newTo?(people.find(p=>p!==newTo)||''):paymentForm.from;
+                      setPaymentForm({...paymentForm,to:newTo,from:newFrom});
+                    }}>
+                      {people.map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
                   </div>
                 </div>
