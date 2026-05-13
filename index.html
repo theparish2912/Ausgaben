@@ -330,6 +330,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   const [editingId,setEditingId]=useState(null);
   const [form,setForm]=useState({desc:'',amount:'',currency:'EUR',paidBy:'',participants:[],splitMode:'equal',customSplits:{},pctSplits:{},date:''});
   const [showPaymentForm,setShowPaymentForm]=useState(false);
+  const [editingPaymentId,setEditingPaymentId]=useState(null);
   const [paymentForm,setPaymentForm]=useState({from:'',to:'',amount:'',currency:'EUR',date:'',note:''});
   const csvRef=useRef();
 
@@ -341,7 +342,13 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   const setPayments=v=>update({payments:typeof v==='function'?v(payments):v});
 
   const openPaymentForm=()=>{
+    setEditingPaymentId(null);
     setPaymentForm({from:people[0]||'',to:people[1]||'',amount:'',currency:'EUR',date:new Date().toISOString().slice(0,10),note:''});
+    setShowPaymentForm(true);
+  };
+  const openEditPayment=p=>{
+    setEditingPaymentId(p.id);
+    setPaymentForm({from:p.from,to:p.to,amount:String(p.amount),currency:p.currency,date:p.date,note:p.note||''});
     setShowPaymentForm(true);
   };
   const savePayment=()=>{
@@ -349,9 +356,15 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
     if(paymentForm.from===paymentForm.to){alert('Von und An dürfen nicht gleich sein.');return;}
     const amt=parseFloat(paymentForm.amount);
     if(isNaN(amt)||amt<=0){alert('Ungültiger Betrag.');return;}
-    setPayments(ps=>[...ps,{id:uid(),from:paymentForm.from,to:paymentForm.to,amount:amt,currency:paymentForm.currency,date:paymentForm.date||new Date().toISOString().slice(0,10),note:paymentForm.note.trim()}]);
-    setShowPaymentForm(false);
-    showToast('Zahlung gespeichert ✓');
+    const entry={id:editingPaymentId||uid(),from:paymentForm.from,to:paymentForm.to,amount:amt,currency:paymentForm.currency,date:paymentForm.date||new Date().toISOString().slice(0,10),note:paymentForm.note.trim()};
+    if(editingPaymentId){
+      setPayments(ps=>ps.map(p=>p.id===editingPaymentId?entry:p));
+      showToast('Zahlung aktualisiert ✓');
+    } else {
+      setPayments(ps=>[...ps,entry]);
+      showToast('Zahlung gespeichert ✓');
+    }
+    setShowPaymentForm(false);setEditingPaymentId(null);
   };
   const deletePayment=(id)=>{
     if(!window.confirm('Zahlung löschen?'))return;
@@ -392,7 +405,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   const toggleParticipant=p=>setForm(f=>({...f,participants:f.participants.includes(p)?f.participants.filter(x=>x!==p):[...f.participants,p]}));
 
   const saveExpense=()=>{
-    if(!form.desc.trim()||!form.amount||!form.paidBy||form.participants.length===0){alert('Bitte alle Pflichtfelder ausfüllen.');return;}
+    if(!form.desc.trim()||form.amount===''||form.amount===undefined||!form.paidBy||form.participants.length===0){alert('Bitte alle Pflichtfelder ausfüllen.');return;}
     const amt=parseFloat(form.amount);
     let splits={};
     if(form.splitMode==='equal'){
@@ -493,6 +506,113 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
     form.splitMode==='percent'?form.participants.reduce((s,p)=>s+(parseFloat(form.pctSplits[p])||0),0):0,
   [form.pctSplits,form.splitMode,form.participants]);
 
+  /* ── Reusable expense form fields ── */
+  const expenseFormFields=()=>(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div className="grid2">
+        <div style={{gridColumn:'1/-1'}}><label className="label">Beschreibung *</label><input type="text" placeholder="z.B. Hotel, Abendessen…" value={form.desc} onChange={e=>setForm({...form,desc:e.target.value})}/></div>
+      </div>
+      <div className="grid2">
+        <div><label className="label">Betrag *</label><input type="number" placeholder="0.00" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></div>
+        <div><label className="label">Währung</label>
+          <select value={form.currency} onChange={e=>setForm({...form,currency:e.target.value})}>
+            {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="grid2">
+        <div><label className="label">Bezahlt von *</label>
+          <select value={form.paidBy} onChange={e=>setForm({...form,paidBy:e.target.value})}>
+            {people.map(p=><option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <div><label className="label">Datum</label>
+          <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
+        </div>
+      </div>
+      <div>
+        <label className="label">Beteiligte Personen *</label>
+        <div style={{display:'flex',flexWrap:'wrap',gap:7,marginTop:5}}>
+          {people.map(p=>{const [bg,tc]=personColor(p);const sel=form.participants.includes(p);return(
+            <div key={p} className={`chip ${sel?'selected':''}`}
+              style={sel?{}:{background:bg,color:tc,borderColor:'transparent'}}
+              onClick={()=>toggleParticipant(p)}>
+              <div className="avatar" style={{width:18,height:18,fontSize:9,background:sel?'rgba(255,255,255,.25)':tc+'22',color:sel?'#fff':tc}}>{initials(p)}</div>
+              {p}
+            </div>
+          );})}
+        </div>
+      </div>
+      <div>
+        <label className="label">Aufteilung</label>
+        <div style={{display:'flex',gap:8}}>
+          {[['equal','Gleichmäßig'],['percent','Prozentual'],['custom','Betrag']].map(([mode,lbl])=>(
+            <button key={mode} style={{flex:1,borderRadius:'999px',fontWeight:700,fontSize:12,
+              background:form.splitMode===mode?'var(--accent)':'transparent',
+              color:form.splitMode===mode?'#fff':'var(--text2)',
+              borderColor:form.splitMode===mode?'var(--accent)':'var(--border2)'}}
+              onClick={()=>setForm({...form,splitMode:mode})}>{lbl}</button>
+          ))}
+        </div>
+      </div>
+      {form.splitMode==='equal'&&form.participants.length>0&&form.amount&&(
+        <div style={{background:'#FDE8D0',borderRadius:'var(--radius)',padding:'10px 14px'}}>
+          <p style={{fontSize:13,color:'#B05A10',fontWeight:700}}>
+            Pro Person: <span style={{fontSize:16,fontWeight:800}}>{fmtAmt(parseFloat(form.amount)/form.participants.length,form.currency)}</span>
+            <span style={{fontWeight:600,opacity:.7}}> ({form.participants.join(', ')})</span>
+          </p>
+        </div>
+      )}
+      {form.splitMode==='percent'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {form.participants.map(p=>{const [bg,tc]=personColor(p);const pct=parseFloat(form.pctSplits[p])||0;const amt=form.amount?Math.round(parseFloat(form.amount)*pct/100*100)/100:0;return(
+            <div key={p} className="row">
+              <div className="avatar" style={{width:28,height:28,fontSize:10,background:bg,color:tc,flexShrink:0}}>{initials(p)}</div>
+              <span style={{fontSize:13,minWidth:72,color:'var(--text2)',fontWeight:700}}>{p}</span>
+              <input type="number" placeholder="0" min="0" max="100" step="0.1" value={form.pctSplits[p]||''} style={{width:'90px'}}
+                onChange={e=>setForm({...form,pctSplits:{...form.pctSplits,[p]:e.target.value}})}/>
+              <span style={{fontSize:13,color:'var(--text3)',fontWeight:600}}>%</span>
+              {form.amount&&<span style={{fontSize:12,color:'var(--text2)',marginLeft:4}}>= {fmtAmt(amt,form.currency)}</span>}
+            </div>
+          );})}
+          <div style={{display:'flex',gap:8,alignItems:'center',paddingLeft:4}}>
+            <p style={{fontSize:12,fontWeight:800,color:Math.abs(pctTotal-100)<0.1?'var(--success)':'var(--danger)'}}>
+              Gesamt: {pctTotal.toFixed(1)}% {Math.abs(pctTotal-100)<0.1?'✓':'– muss 100% ergeben'}
+            </p>
+            <button style={{fontSize:11,padding:'3px 10px',borderRadius:999}} onClick={()=>{
+              const eq=(100/form.participants.length).toFixed(1);
+              const splits={};form.participants.forEach(p=>splits[p]=eq);
+              setForm({...form,pctSplits:splits});
+            }}>Gleichmäßig</button>
+          </div>
+        </div>
+      )}
+      {form.splitMode==='custom'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {form.participants.map(p=>{const [bg,tc]=personColor(p);return(
+            <div key={p} className="row">
+              <div className="avatar" style={{width:28,height:28,fontSize:10,background:bg,color:tc,flexShrink:0}}>{initials(p)}</div>
+              <span style={{fontSize:13,minWidth:72,color:'var(--text2)',fontWeight:700}}>{p}</span>
+              <input type="number" placeholder="0.00" step="0.01" value={form.customSplits[p]||''} style={{width:'130px'}}
+                onChange={e=>setForm({...form,customSplits:{...form.customSplits,[p]:e.target.value}})}/>
+              <span style={{fontSize:13,color:'var(--text3)',fontWeight:600}}>{form.currency}</span>
+            </div>
+          );})}
+          {form.amount&&(
+            <p style={{fontSize:12,paddingLeft:4,fontWeight:800,color:Math.abs(customTotal-parseFloat(form.amount||0))<0.02?'var(--success)':'var(--danger)'}}>
+              Summe: {fmtAmt(customTotal,form.currency)} / {fmtAmt(parseFloat(form.amount||0),form.currency)}
+              {Math.abs(customTotal-parseFloat(form.amount||0))<0.02?' ✓':' – Differenz: '+fmtAmt(Math.abs(customTotal-parseFloat(form.amount||0)),form.currency)}
+            </p>
+          )}
+        </div>
+      )}
+      <div className="row" style={{justifyContent:'flex-end',gap:8,marginTop:4,paddingTop:12,borderTop:'1.5px solid var(--border)'}}>
+        <button className="btn-ghost" onClick={()=>{setShowForm(false);setEditingId(null);}}>Abbrechen</button>
+        <button className="btn-accent" onClick={saveExpense}>{editingId?'Aktualisieren':'Speichern'}</button>
+      </div>
+    </div>
+  );
+
   return(
     <div>
       {/* Back + title */}
@@ -571,129 +691,27 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
             </div>
           )}
 
-          {showForm&&(
+          {showForm&&!editingId&&(
             <div className="card" style={{marginBottom:'1.2rem',border:'1.5px solid var(--accent)'}}>
-              <p className="section-title" style={{marginBottom:16}}>{editingId?'Ausgabe bearbeiten':'Neue Ausgabe'}</p>
-              <div style={{display:'flex',flexDirection:'column',gap:14}}>
-                <div className="grid2">
-                  <div style={{gridColumn:'1/-1'}}><label className="label">Beschreibung *</label><input type="text" placeholder="z.B. Hotel, Abendessen…" value={form.desc} onChange={e=>setForm({...form,desc:e.target.value})}/></div>
-                </div>
-                <div className="grid2">
-                  <div><label className="label">Betrag *</label><input type="number" placeholder="0.00" min="0" step="0.01" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})}/></div>
-                  <div><label className="label">Währung</label>
-                    <select value={form.currency} onChange={e=>setForm({...form,currency:e.target.value})}>
-                      {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className="grid2">
-                  <div><label className="label">Bezahlt von *</label>
-                    <select value={form.paidBy} onChange={e=>setForm({...form,paidBy:e.target.value})}>
-                      {people.map(p=><option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </div>
-                  <div><label className="label">Datum</label>
-                    <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
-                  </div>
-                </div>
-                <div>
-                  <label className="label">Beteiligte Personen *</label>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:7,marginTop:5}}>
-                    {people.map(p=>{const [bg,tc]=personColor(p);const sel=form.participants.includes(p);return(
-                      <div key={p} className={`chip ${sel?'selected':''}`}
-                        style={sel?{}:{background:bg,color:tc,borderColor:'transparent'}}
-                        onClick={()=>toggleParticipant(p)}>
-                        <div className="avatar" style={{width:18,height:18,fontSize:9,background:sel?'rgba(255,255,255,.25)':tc+'22',color:sel?'#fff':tc}}>{initials(p)}</div>
-                        {p}
-                      </div>
-                    );})}
-                  </div>
-                </div>
-                <div>
-                  <label className="label">Aufteilung</label>
-                  <div style={{display:'flex',gap:8}}>
-                    {[['equal','Gleichmäßig'],['percent','Prozentual'],['custom','Betrag']].map(([mode,lbl])=>(
-                      <button key={mode} style={{flex:1,borderRadius:'999px',fontWeight:700,fontSize:12,
-                        background:form.splitMode===mode?'var(--accent)':'transparent',
-                        color:form.splitMode===mode?'#fff':'var(--text2)',
-                        borderColor:form.splitMode===mode?'var(--accent)':'var(--border2)'}}
-                        onClick={()=>setForm({...form,splitMode:mode})}>
-                        {lbl}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Equal */}
-                {form.splitMode==='equal'&&form.participants.length>0&&form.amount&&(
-                  <div style={{background:'#FDE8D0',borderRadius:'var(--radius)',padding:'10px 14px'}}>
-                    <p style={{fontSize:13,color:'#B05A10',fontWeight:700}}>
-                      Pro Person: <span style={{fontSize:16,fontWeight:800}}>{fmtAmt(parseFloat(form.amount)/form.participants.length,form.currency)}</span>
-                      <span style={{fontWeight:600,opacity:.7}}> ({form.participants.join(', ')})</span>
-                    </p>
-                  </div>
-                )}
-
-                {/* Percent */}
-                {form.splitMode==='percent'&&(
-                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                    {form.participants.map(p=>{const [bg,tc]=personColor(p);const pct=parseFloat(form.pctSplits[p])||0;const amt=form.amount?Math.round(parseFloat(form.amount)*pct/100*100)/100:0;return(
-                      <div key={p} className="row">
-                        <div className="avatar" style={{width:28,height:28,fontSize:10,background:bg,color:tc,flexShrink:0}}>{initials(p)}</div>
-                        <span style={{fontSize:13,minWidth:72,color:'var(--text2)',fontWeight:700}}>{p}</span>
-                        <input type="number" placeholder="0" min="0" max="100" step="0.1"
-                          value={form.pctSplits[p]||''} style={{width:'90px'}}
-                          onChange={e=>setForm({...form,pctSplits:{...form.pctSplits,[p]:e.target.value}})}/>
-                        <span style={{fontSize:13,color:'var(--text3)',fontWeight:600}}>%</span>
-                        {form.amount&&<span style={{fontSize:12,color:'var(--text2)',marginLeft:4}}>= {fmtAmt(amt,form.currency)}</span>}
-                      </div>
-                    );})}
-                    <div style={{display:'flex',gap:8,alignItems:'center',paddingLeft:4}}>
-                      <p style={{fontSize:12,fontWeight:800,color:Math.abs(pctTotal-100)<0.1?'var(--success)':'var(--danger)'}}>
-                        Gesamt: {pctTotal.toFixed(1)}% {Math.abs(pctTotal-100)<0.1?'✓':'– muss 100% ergeben'}
-                      </p>
-                      <button style={{fontSize:11,padding:'3px 10px',borderRadius:999}} onClick={()=>{
-                        const eq=(100/form.participants.length).toFixed(1);
-                        const splits={};form.participants.forEach(p=>splits[p]=eq);
-                        setForm({...form,pctSplits:splits});
-                      }}>Gleichmäßig verteilen</button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Custom amount */}
-                {form.splitMode==='custom'&&(
-                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                    {form.participants.map(p=>{const [bg,tc]=personColor(p);return(
-                      <div key={p} className="row">
-                        <div className="avatar" style={{width:28,height:28,fontSize:10,background:bg,color:tc,flexShrink:0}}>{initials(p)}</div>
-                        <span style={{fontSize:13,minWidth:72,color:'var(--text2)',fontWeight:700}}>{p}</span>
-                        <input type="number" placeholder="0.00" min="0" step="0.01"
-                          value={form.customSplits[p]||''} style={{width:'130px'}}
-                          onChange={e=>setForm({...form,customSplits:{...form.customSplits,[p]:e.target.value}})}/>
-                        <span style={{fontSize:13,color:'var(--text3)',fontWeight:600}}>{form.currency}</span>
-                      </div>
-                    );})}
-                    {form.amount&&(
-                      <p style={{fontSize:12,paddingLeft:4,fontWeight:800,color:Math.abs(customTotal-parseFloat(form.amount||0))<0.02?'var(--success)':'var(--danger)'}}>
-                        Summe: {fmtAmt(customTotal,form.currency)} / {fmtAmt(parseFloat(form.amount||0),form.currency)}
-                        {Math.abs(customTotal-parseFloat(form.amount||0))<0.02?' ✓':' – Differenz: '+fmtAmt(Math.abs(customTotal-parseFloat(form.amount||0)),form.currency)}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                <div className="row" style={{justifyContent:'flex-end',gap:8,marginTop:4,paddingTop:12,borderTop:'1.5px solid var(--border)'}}>
-                  <button className="btn-ghost" onClick={()=>{setShowForm(false);setEditingId(null);}}>Abbrechen</button>
-                  <button className="btn-accent" onClick={saveExpense}>{editingId?'Aktualisieren':'Speichern'}</button>
-                </div>
-              </div>
+              <p className="section-title" style={{marginBottom:16}}>Neue Ausgabe</p>
+              {expenseFormFields()}
             </div>
           )}
 
           {expenses.length===0?<div className="empty">Klicke auf „+ Ausgabe" um zu beginnen</div>:(
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              {[...expenses].reverse().map(e=>{const [bg,tc]=personColor(e.paidBy);return(
+              {[...expenses].reverse().map(e=>{
+                const [bg,tc]=personColor(e.paidBy);
+                // Inline edit form
+                if(editingId===e.id){
+                  return(
+                    <div key={e.id} className="card" style={{border:'1.5px solid var(--accent)'}}>
+                      <p className="section-title" style={{marginBottom:16}}>Ausgabe bearbeiten</p>
+                      {expenseFormFields()}
+                    </div>
+                  );
+                }
+                return(
                 <div key={e.id} className="card">
                   <div className="row" style={{justifyContent:'space-between',marginBottom:10}}>
                     <div className="row" style={{gap:12}}>
@@ -708,7 +726,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
                   </div>
                   <div style={{borderTop:'1.5px solid var(--border)',paddingTop:8,display:'flex',flexWrap:'wrap',gap:6}}>
                     {Object.entries(e.splits).map(([p,share])=>{const [pbg,ptc]=personColor(p);
-                      const pct=Math.round(share/e.amount*100);
+                      const pct=e.amount!==0?Math.round(share/e.amount*100):0;
                       return<span key={p} className="badge" style={{background:pbg,color:ptc}}>{p}: {fmtAmt(share,e.currency)} ({pct}%)</span>;
                     })}
                   </div>
@@ -740,7 +758,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
 
           {showPaymentForm&&(
             <div className="card" style={{marginBottom:'1.2rem',border:'1.5px solid var(--accent)'}}>
-              <p className="section-title" style={{marginBottom:14}}>Neue Zahlung</p>
+              <p className="section-title" style={{marginBottom:14}}>{editingPaymentId?'Zahlung bearbeiten':'Neue Zahlung'}</p>
               <div style={{display:'flex',flexDirection:'column',gap:12}}>
                 <div className="grid2">
                   <div><label className="label">Von *</label>
@@ -781,8 +799,8 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
                   </div>
                 </div>
                 <div className="row" style={{justifyContent:'flex-end',gap:8,paddingTop:10,borderTop:'1.5px solid var(--border)'}}>
-                  <button className="btn-ghost" onClick={()=>setShowPaymentForm(false)}>Abbrechen</button>
-                  <button className="btn-accent" onClick={savePayment}>Zahlung speichern</button>
+                  <button className="btn-ghost" onClick={()=>{setShowPaymentForm(false);setEditingPaymentId(null);}}>Abbrechen</button>
+                  <button className="btn-accent" onClick={savePayment}>{editingPaymentId?'Aktualisieren':'Zahlung speichern'}</button>
                 </div>
               </div>
             </div>
@@ -808,8 +826,9 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
                         </p>
                       </div>
                     </div>
-                    <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
                       <span style={{fontSize:16,fontWeight:800,color:'var(--success)'}}>{fmtAmt(p.amount,p.currency)}</span>
+                      <button className="btn-sm btn-ghost" onClick={()=>openEditPayment(p)} style={{borderRadius:999}}>✎</button>
                       <button className="btn-sm btn-danger" onClick={()=>deletePayment(p.id)}>✕</button>
                     </div>
                   </div>
@@ -968,7 +987,6 @@ function App(){
         <>
           <p className="section-title">Meine Gruppen</p>
           <GroupsOverview groups={groups} onSelect={setActiveGroupId} onNew={createGroup} onDelete={deleteGroup}/>
-          <ReviewSection reviews={reviews} onSave={rv=>save({...dbData,reviews:rv})}/>
         </>
       ):(
         <GroupDetail
