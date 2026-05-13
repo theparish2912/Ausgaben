@@ -156,13 +156,24 @@ function parseCsv(text,people){
     const amount=parseFloat((row[idx.amount]||'').replace(',','.'));
     const currency=idx.currency>=0?(row[idx.currency]||'EUR').toUpperCase():'EUR';
     const ratio=idx.ratio>=0?parseFloat((row[idx.ratio]||'1').replace(',','.')):1;
-    // Date: accept DD.MM.YYYY, YYYY-MM-DD, or fallback to today
+    // Date: accept MM.DD.YY, DD.MM.YYYY, YYYY-MM-DD, or fallback to today
     let date=new Date().toISOString().slice(0,10);
     if(idx.date>=0&&row[idx.date]){
       const raw=row[idx.date].trim();
-      const deMatch=raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-      if(deMatch) date=`${deMatch[3]}-${deMatch[2].padStart(2,'0')}-${deMatch[1].padStart(2,'0')}`;
-      else if(/^\d{4}-\d{2}-\d{2}$/.test(raw)) date=raw;
+      // MM.DD.YY  e.g. 07.15.24
+      const mdyShort=raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2})$/);
+      // DD.MM.YYYY e.g. 15.07.2024
+      const dmyLong=raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      // YYYY-MM-DD e.g. 2024-07-15
+      const isoFmt=/^\d{4}-\d{2}-\d{2}$/.test(raw);
+      if(mdyShort){
+        const year=parseInt(mdyShort[3])<50?`20${mdyShort[3]}`:`19${mdyShort[3]}`;
+        date=`${year}-${mdyShort[1].padStart(2,'0')}-${mdyShort[2].padStart(2,'0')}`;
+      } else if(dmyLong){
+        date=`${dmyLong[3]}-${dmyLong[2].padStart(2,'0')}-${dmyLong[1].padStart(2,'0')}`;
+      } else if(isoFmt){
+        date=raw;
+      }
     }
 
     if(!person||!desc||isNaN(amount)||amount<=0){errors.push(`Zeile ${i+2}: ungültig`);return;}
@@ -312,12 +323,14 @@ function GroupsOverview({groups,onSelect,onNew,onDelete}){
 
 /* ══ GROUP DETAIL ═════════════════════════════ */
 function GroupDetail({group,onUpdate,onBack,personColorFn}){
-  const {people,expenses}=group;
+  const {people,expenses,payments=[]}=group;
   const [tab,setTab]=useState('expenses');
   const [newPerson,setNewPerson]=useState('');
   const [showForm,setShowForm]=useState(false);
   const [editingId,setEditingId]=useState(null);
   const [form,setForm]=useState({desc:'',amount:'',currency:'EUR',paidBy:'',participants:[],splitMode:'equal',customSplits:{},pctSplits:{},date:''});
+  const [showPaymentForm,setShowPaymentForm]=useState(false);
+  const [paymentForm,setPaymentForm]=useState({from:'',to:'',amount:'',currency:'EUR',date:'',note:''});
   const csvRef=useRef();
 
   const personColor=name=>personColorFn(name,people);
@@ -325,6 +338,26 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   const update=patch=>onUpdate({...group,...patch});
   const setPeople=v=>update({people:typeof v==='function'?v(people):v});
   const setExpenses=v=>update({expenses:typeof v==='function'?v(expenses):v});
+  const setPayments=v=>update({payments:typeof v==='function'?v(payments):v});
+
+  const openPaymentForm=()=>{
+    setPaymentForm({from:people[0]||'',to:people[1]||'',amount:'',currency:'EUR',date:new Date().toISOString().slice(0,10),note:''});
+    setShowPaymentForm(true);
+  };
+  const savePayment=()=>{
+    if(!paymentForm.from||!paymentForm.to||!paymentForm.amount){alert('Von, An und Betrag sind Pflicht.');return;}
+    if(paymentForm.from===paymentForm.to){alert('Von und An dürfen nicht gleich sein.');return;}
+    const amt=parseFloat(paymentForm.amount);
+    if(isNaN(amt)||amt<=0){alert('Ungültiger Betrag.');return;}
+    setPayments(ps=>[...ps,{id:uid(),from:paymentForm.from,to:paymentForm.to,amount:amt,currency:paymentForm.currency,date:paymentForm.date||new Date().toISOString().slice(0,10),note:paymentForm.note.trim()}]);
+    setShowPaymentForm(false);
+    showToast('Zahlung gespeichert ✓');
+  };
+  const deletePayment=(id)=>{
+    if(!window.confirm('Zahlung löschen?'))return;
+    setPayments(ps=>ps.filter(p=>p.id!==id));
+    showToast('Zahlung gelöscht');
+  };
 
   const addPerson=()=>{
     const n=newPerson.trim();if(!n)return;
@@ -426,19 +459,25 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
   };
 
   /* ── Computed ── */
-  const usedCurrencies=[...new Set(expenses.map(e=>e.currency))];
+  const usedCurrencies=[...new Set([...expenses.map(e=>e.currency),...payments.map(p=>p.currency)])];
   const settlementByCurrency=useMemo(()=>{
     const result={};
     usedCurrencies.forEach(cur=>{
       const balances={};people.forEach(p=>balances[p]=0);
+      // Expense-based balances
       expenses.filter(e=>e.currency===cur).forEach(e=>{
         if(balances[e.paidBy]!==undefined)balances[e.paidBy]+=e.amount;
         Object.entries(e.splits).forEach(([p,share])=>{if(balances[p]!==undefined)balances[p]-=share;});
       });
+      // Apply recorded payments: payer's balance increases, receiver's decreases
+      payments.filter(p=>p.currency===cur).forEach(p=>{
+        if(balances[p.from]!==undefined)balances[p.from]+=p.amount;
+        if(balances[p.to]!==undefined)balances[p.to]-=p.amount;
+      });
       result[cur]={balances,transactions:simplifyDebts({...balances})};
     });
     return result;
-  },[expenses,people,usedCurrencies.join()]);
+  },[expenses,payments,people,usedCurrencies.join()]);
 
   const totalByCurrency=useMemo(()=>{
     const t={};expenses.forEach(e=>{t[e.currency]=(t[e.currency]||0)+e.amount;});return t;
@@ -684,7 +723,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
             <p style={{fontSize:11,fontFamily:'monospace',color:'var(--text2)',lineHeight:1.8}}>
               Person;Beschreibung;Betrag;Währung;Aufteilverhältnis;Datum<br/>
               Anna;Hotel;180;EUR;0.33;15.07.2024<br/>
-              <span style={{color:'var(--text3)'}}>Datum: TT.MM.JJJJ oder JJJJ-MM-TT · Aufteilverhältnis: 0–1</span>
+              <span style={{color:'var(--text3)'}}>Datum: MM.TT.JJ · TT.MM.JJJJ · JJJJ-MM-TT · Aufteilverhältnis: 0–1</span>
             </p>
           </div>
         </div>
@@ -693,14 +732,101 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
       {/* ── ABRECHNUNG ── */}
       {tab==='settlement'&&(
         <div>
+          {/* Zahlungen erfassen */}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1rem',flexWrap:'wrap',gap:8}}>
+            <p className="section-title" style={{marginBottom:0}}>Überwiesene Zahlungen</p>
+            <button className="btn-ghost btn-sm" onClick={openPaymentForm} disabled={people.length<2}>+ Zahlung erfassen</button>
+          </div>
+
+          {showPaymentForm&&(
+            <div className="card" style={{marginBottom:'1.2rem',border:'1.5px solid var(--accent)'}}>
+              <p className="section-title" style={{marginBottom:14}}>Neue Zahlung</p>
+              <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                <div className="grid2">
+                  <div><label className="label">Von *</label>
+                    <select value={paymentForm.from} onChange={e=>setPaymentForm({...paymentForm,from:e.target.value})}>
+                      {people.map(p=><option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div><label className="label">An *</label>
+                    <select value={paymentForm.to} onChange={e=>setPaymentForm({...paymentForm,to:e.target.value})}>
+                      {people.filter(p=>p!==paymentForm.from).map(p=><option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid2">
+                  <div><label className="label">Betrag *</label>
+                    <input type="number" placeholder="0.00" min="0" step="0.01" value={paymentForm.amount} onChange={e=>setPaymentForm({...paymentForm,amount:e.target.value})}/>
+                  </div>
+                  <div><label className="label">Währung</label>
+                    <select value={paymentForm.currency} onChange={e=>setPaymentForm({...paymentForm,currency:e.target.value})}>
+                      {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid2">
+                  <div><label className="label">Datum</label>
+                    <input type="date" value={paymentForm.date} onChange={e=>setPaymentForm({...paymentForm,date:e.target.value})}/>
+                  </div>
+                  <div><label className="label">Notiz (optional)</label>
+                    <input type="text" placeholder="z.B. Banküberweisung" value={paymentForm.note} onChange={e=>setPaymentForm({...paymentForm,note:e.target.value})}/>
+                  </div>
+                </div>
+                <div className="row" style={{justifyContent:'flex-end',gap:8,paddingTop:10,borderTop:'1.5px solid var(--border)'}}>
+                  <button className="btn-ghost" onClick={()=>setShowPaymentForm(false)}>Abbrechen</button>
+                  <button className="btn-accent" onClick={savePayment}>Zahlung speichern</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {payments.length>0&&(
+            <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:'1.5rem'}}>
+              {[...payments].reverse().map(p=>{
+                const [fbg,ftc]=personColor(p.from);
+                const [,ttc]=personColor(p.to);
+                return(
+                  <div key={p.id} className="card row" style={{justifyContent:'space-between',background:'#F5EDE0'}}>
+                    <div className="row" style={{gap:10,flex:1,minWidth:0}}>
+                      <div className="avatar" style={{width:36,height:36,fontSize:12,background:fbg,color:ftc,flexShrink:0}}>{initials(p.from)}</div>
+                      <div style={{minWidth:0}}>
+                        <p style={{fontSize:13,fontWeight:800}}>
+                          <span style={{color:ftc}}>{p.from}</span>
+                          <span style={{color:'var(--text3)',margin:'0 6px',fontWeight:400}}>→</span>
+                          <span style={{color:ttc}}>{p.to}</span>
+                        </p>
+                        <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>
+                          {p.date}{p.note&&` · ${p.note}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
+                      <span style={{fontSize:16,fontWeight:800,color:'var(--success)'}}>{fmtAmt(p.amount,p.currency)}</span>
+                      <button className="btn-sm btn-danger" onClick={()=>deletePayment(p.id)}>✕</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {payments.length===0&&!showPaymentForm&&(
+            <div className="empty" style={{marginBottom:'1.5rem',padding:'1rem'}}>Noch keine Zahlungen erfasst</div>
+          )}
+
+          <hr style={{border:'none',borderTop:'1.5px solid var(--border)',marginBottom:'1.5rem'}}/>
+
+          {/* Settlement per currency */}
           {usedCurrencies.length===0?<div className="empty">Noch keine Ausgaben</div>:(
             usedCurrencies.map(cur=>{
               const {balances:curBal,transactions:curTxs}=settlementByCurrency[cur];
+              const curPayments=payments.filter(p=>p.currency===cur);
               return(
                 <div key={cur} style={{marginBottom:'2rem'}}>
                   <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
                     <span style={{fontSize:11,fontWeight:800,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.08em'}}>Abrechnung</span>
                     <span style={{background:'#FDE8D0',color:'#B05A10',borderRadius:999,padding:'3px 12px',fontSize:13,fontWeight:800}}>{cur}</span>
+                    {curPayments.length>0&&<span style={{fontSize:11,color:'var(--success)',fontWeight:700}}>✓ {curPayments.length} Zahlung{curPayments.length>1?'en':''} eingerechnet</span>}
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:10,marginBottom:'1rem'}}>
                     {people.map(p=>{
@@ -727,7 +853,7 @@ function GroupDetail({group,onUpdate,onBack,personColorFn}){
                             <div className="avatar" style={{width:40,height:40,fontSize:13,background:fbg,color:ftc}}>{initials(t.from)}</div>
                             <div>
                               <p style={{fontSize:14,fontWeight:800}}>{t.from}<span style={{color:'var(--text3)',margin:'0 8px',fontWeight:400}}>→</span>{t.to}</p>
-                              <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>Überweisung #{i+1}</p>
+                              <p style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>Noch ausstehend #{i+1}</p>
                             </div>
                           </div>
                           <p style={{fontSize:20,fontWeight:800,color:'var(--danger)',letterSpacing:'-0.02em'}}>{fmtAmt(t.amount,cur)}</p>
@@ -795,7 +921,7 @@ function App(){
   /* Group mutators */
   const saveGroups=newGroups=>save({...dbData,groups:newGroups});
   const createGroup=name=>{
-    const g={id:uid(),name:name.trim(),created:new Date().toISOString(),people:[],expenses:[]};
+    const g={id:uid(),name:name.trim(),created:new Date().toISOString(),people:[],expenses:[],payments:[]};
     saveGroups([...groups,g]);showToast(`Gruppe „${name}" erstellt ✓`);
   };
   const deleteGroup=(id,name)=>{
